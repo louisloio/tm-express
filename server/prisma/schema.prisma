@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OnboardingStatus {
+  PENDING_DVLA
+  APPROVED
+}
+
+enum DocumentType {
+  PMI
+  BRAKE_TEST
+  MOT
+  VED
+  INSURANCE
+  LICENCE_CHECK
+  CPC
+  INFRINGEMENT_REPORT
+  DEPOT_VISIT_NOTE
+  OTHER
+}
+
+enum FollowUpStatus {
+  NONE
+  OPEN
+  RESOLVED
+}
+
+enum TodoType {
+  MISSING_DOCUMENT
+  OVERDUE_DOCUMENT
+  VISIT_OVERDUE
+  ONBOARDING_STEP
+  OCRS_MOVEMENT
+  INFRINGEMENT
+}
+
+enum TodoStatus {
+  OPEN
+  RESOLVED
+}
+
+// Client compliance status (Green/Amber/Red) is computed from due dates and
+// document freshness, not stored — see Phase 1 build order step 5.
+model Client {
+  id                     String           @id @default(cuid())
+  companyName            String
+  companyNumber          String?
+  vatNumber              String?
+  olNumber               String?
+  address                String?
+  operatingCentreAddress String?
+  phone                  String?
+  website                String?
+  contactName            String?
+  contactEmail           String?
+  onboardingStatus       OnboardingStatus @default(PENDING_DVLA)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  vehicles   Vehicle[]
+  drivers    Driver[]
+  documents  Document[]
+  depotVisits DepotVisit[]
+  todos      Todo[]
+}
+
+model Vehicle {
+  id                String    @id @default(cuid())
+  clientId          String
+  registration      String
+  type              String?
+  pmiDueDate        DateTime?
+  brakeTestDueDate  DateTime?
+  ebpmsFlag         Boolean   @default(false)
+  motDueDate        DateTime?
+  vedDueDate        DateTime?
+  insuranceDueDate  DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  documents Document[]
+  todos     Todo[]
+
+  @@unique([clientId, registration])
+}
+
+model Driver {
+  id                  String    @id @default(cuid())
+  clientId            String
+  name                String
+  licenceCheckDueDate DateTime?
+  cpcDueDate          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  documents Document[]
+  todos     Todo[]
+}
+
+model Document {
+  id           String       @id @default(cuid())
+  clientId     String
+  vehicleId    String?
+  driverId     String?
+  type         DocumentType
+  fileName     String
+  filePath     String
+  uploadDate   DateTime     @default(now())
+  validUntil   DateTime?
+  createdAt    DateTime     @default(now())
+
+  client  Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  driver  Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+}
+
+model DepotVisit {
+  id             String         @id @default(cuid())
+  clientId       String
+  date           DateTime
+  findings       String?
+  actionsAgreed  String?
+  owner          String?
+  followUpStatus FollowUpStatus @default(NONE)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  todos  Todo[]
+}
+
+model Todo {
+  id           String     @id @default(cuid())
+  type         TodoType
+  description  String
+  clientId     String
+  vehicleId    String?
+  driverId     String?
+  depotVisitId String?
+  status       TodoStatus @default(OPEN)
+  createdAt    DateTime   @default(now())
+  resolvedAt   DateTime?
+
+  client     Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle?    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driver     Driver?     @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  depotVisit DepotVisit? @relation(fields: [depotVisitId], references: [id], onDelete: Cascade)
+}
