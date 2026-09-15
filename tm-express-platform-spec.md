@@ -125,6 +125,22 @@ Every anomaly TM Express detects — a missing document, an overdue freshness ch
 
 **Why this matters for the TM conduct record (section 3):** the todo list, combined with its resolution log (chased on X, resolved on Y), doubles as the audit trail showing continuous and effective management — so it's not just a working list, it's evidence.
 
+## 9. In-app help for every manual entry point
+
+Anything that can't be automated (no API, no email trail) still needs to happen inside TM Express — but the TM shouldn't have to remember from memory where each piece of information lives. Every manual field carries an inline explanation and, where relevant, a direct link to the source system.
+
+| Manual entry point | Where to find it | In-app explanation |
+|---|---|---|
+| VOL disclosure form submission status | `vehicle-operator-licensing.service.gov.uk/auth/login` | "Submit the hours/vehicle disclosure on VOL directly — TM Express can't submit this for you. Once DVLA responds, update the status here." |
+| DVLA onboarding email details (company name, application number) | The TM's own inbox — auto-detected, but confirm manually if the parser misses anything | "These details come from DVLA's 'You've been named as a Transport Manager' email." |
+| OCRS scores (roadworthiness, traffic) | VOL → "Your DVSA Operator Reports" → "View your current OCRS" | "Recalculated weekly by DVSA. Check monthly and enter what you see here — TM Express tracks the trend and flags any band movement for you." |
+| PMI / brake test / MOT / VED / insurance valid-until dates | The document itself, once received | "Enter the date this document is valid until, based on the certificate or record you received." |
+| Depot visit log | Your own on-site visit | "Log date, findings, and any actions agreed. This is your evidence of continuous and effective management — see the DVSA Guide to Maintaining Roadworthiness for what to check." (link to the current DVSA guidance PDF) |
+| Driver licence scan/photo | DVLA licence check service, or requested directly from the client | "A data record (e.g. a spreadsheet of licence numbers) isn't enough — DVSA/TC expects the actual scanned document on file." |
+| Brake test cadence (4/year laden, or EBPMS) | The client's maintenance provider | "DVSA requires four laden brake tests per year at 65%+ of design axle weight, unless the vehicle uses an approved EBPMS system." |
+
+This table isn't exhaustive — as new manual fields get added during the build, each one should get the same treatment: a one-line explanation of what's expected, and a link to the source system if an external one exists.
+
 ---
 
 ## Multi-tenant structure
@@ -163,6 +179,7 @@ Every anomaly TM Express detects — a missing document, an overdue freshness ch
 7. Depot visit log entry, feeding the "last visit logged" section and visit-due flagging
 8. Dashboard assembly — grouped sections + client filter dropdown
 9. Todo tab/column view, wired to the same todo data
+10. Inline help text + source links on every manual field (section 9), attached as each field is built rather than bolted on at the end
 
 ### Deliberately out of scope for Phase 1
 - Any email integration (parsing, chasing, onboarding detection) — todo items exist, but "Chase" has nowhere to send yet
@@ -171,3 +188,32 @@ Every anomaly TM Express detects — a missing document, an overdue freshness ch
 - Multi-tenant — build for your own single account first
 
 This phase is done when you'd genuinely stop opening Aquarius and use this instead for your day-to-day client and vehicle compliance tracking.
+
+---
+
+## Phase 2 build plan — OCRS tracking
+
+Most of what was originally scoped for Phase 2 (Green/Amber/Red logic, freshness checks, the audit-ready view) is already delivered in Phase 1, since the dashboard and todo list needed it. What's left for Phase 2 is specifically OCRS: logging your clients' DVSA risk scores over time and catching band movement before it surprises you.
+
+**Note on automation:** VOL doesn't expose a public API for OCRS, the same way it doesn't for onboarding submissions — so this can't be an automated pull. It's you logging into VOL yourself (monthly, per the earlier cadence) and entering what you see into TM Express, which then does the tracking and flagging on top of that manual input.
+
+### Data model additions
+- **OCRS score** — client, date recorded, roadworthiness score, traffic score, band (Green/Amber/Red/Grey/Blue), entered by the TM
+
+### Screens
+1. OCRS entry form per client — date, roadworthiness score, traffic score (band can be computed from the scores, or entered directly if you're just copying what VOL shows)
+2. OCRS history view per client — a simple table or trend of past entries, so you can see direction of travel, not just the latest snapshot
+3. A new dashboard section, "OCRS status," alongside the existing ones (onboarding, visits, PMI, brake test, drivers) — showing each client's current band and highlighting any that moved since last entry
+
+### Build order
+1. OCRS score data model + entry form
+2. History view per client
+3. Band-movement detection — compare each new entry to the previous one, flag if roadworthiness, traffic, or the combined band worsened
+4. Todo item generation on band movement — feeds into the existing todo list (section 8), not a separate alert system
+5. Dashboard section for OCRS, following the same pattern as the other sections
+
+### Deliberately out of scope for Phase 2
+- Any automated VOL login/scrape — not something to build toward, same reasoning as onboarding
+- Predictive scoring or trend forecasting — just tracking and flagging actual entries, nothing speculative
+
+This phase is done when you have a running record of each client's OCRS history in TM Express, and a band worsening shows up as a todo item the same way an overdue document does.
