@@ -45,6 +45,14 @@ enum TodoStatus {
   RESOLVED
 }
 
+enum OcrsBand {
+  GREEN
+  AMBER
+  RED
+  GREY
+  BLUE
+}
+
 // Client compliance status (Green/Amber/Red) is computed from due dates and
 // document freshness, not stored — see Phase 1 build order step 5.
 model Client {
@@ -63,11 +71,12 @@ model Client {
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
 
-  vehicles   Vehicle[]
-  drivers    Driver[]
-  documents  Document[]
+  vehicles    Vehicle[]
+  drivers     Driver[]
+  documents   Document[]
   depotVisits DepotVisit[]
-  todos      Todo[]
+  todos       Todo[]
+  ocrsScores  OcrsScore[]
 }
 
 model Vehicle {
@@ -153,4 +162,18 @@ model Todo {
   vehicle    Vehicle?    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   driver     Driver?     @relation(fields: [driverId], references: [id], onDelete: Cascade)
   depotVisit DepotVisit? @relation(fields: [depotVisitId], references: [id], onDelete: Cascade)
+}
+
+// Manual entry only — VOL has no public API for OCRS (see Phase 2 spec).
+// Scores/band are whatever the TM reads off VOL that month.
+model OcrsScore {
+  id                  String   @id @default(cuid())
+  clientId            String
+  dateRecorded        DateTime
+  roadworthinessScore Int
+  trafficScore        Int
+  band                OcrsBand
+  createdAt           DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }

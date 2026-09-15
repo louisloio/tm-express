@@ -48,6 +48,18 @@ export interface Driver {
   updatedAt: string;
 }
 
+export type OcrsBand = "GREEN" | "AMBER" | "RED" | "GREY" | "BLUE";
+
+export interface OcrsScore {
+  id: string;
+  clientId: string;
+  dateRecorded: string;
+  roadworthinessScore: number;
+  trafficScore: number;
+  band: OcrsBand;
+  createdAt: string;
+}
+
 export type ClientInput = Omit<
   Client,
   "id" | "createdAt" | "updatedAt" | "_count"
@@ -59,6 +71,8 @@ export type VehicleInput = Omit<
 >;
 
 export type DriverInput = Omit<Driver, "id" | "clientId" | "createdAt" | "updatedAt">;
+
+export type OcrsScoreInput = Omit<OcrsScore, "id" | "clientId" | "createdAt">;
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -105,4 +119,15 @@ export const api = {
   updateDriver: (id: string, data: Partial<DriverInput>) =>
     request<Driver>(`/drivers/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteDriver: (id: string) => request<void>(`/drivers/${id}`, { method: "DELETE" }),
+
+  listOcrsScores: (clientId: string) =>
+    request<OcrsScore[]>(`/clients/${clientId}/ocrs-scores`),
+  createOcrsScore: (clientId: string, data: Partial<OcrsScoreInput>) =>
+    request<OcrsScore>(`/clients/${clientId}/ocrs-scores`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateOcrsScore: (id: string, data: Partial<OcrsScoreInput>) =>
+    request<OcrsScore>(`/ocrs-scores/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteOcrsScore: (id: string) => request<void>(`/ocrs-scores/${id}`, { method: "DELETE" }),
 };

@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Client, ClientInput } from "../lib/api";
+import { FieldHelp } from "./FieldHelp";
 
 interface Props {
   initial?: Client;
@@ -69,18 +70,25 @@ export function ClientForm({ initial, onSubmit, onCancel }: Props) {
           OL number
           <input value={form.olNumber} onChange={(e) => set("olNumber", e.target.value)} />
         </label>
-        <label>
-          Onboarding status
-          <select
-            value={form.onboardingStatus}
-            onChange={(e) =>
-              set("onboardingStatus", e.target.value as typeof form.onboardingStatus)
-            }
-          >
-            <option value="PENDING_DVLA">Pending DVLA</option>
-            <option value="APPROVED">Approved</option>
-          </select>
-        </label>
+        <div className="field">
+          <label>
+            Onboarding status
+            <select
+              value={form.onboardingStatus}
+              onChange={(e) =>
+                set("onboardingStatus", e.target.value as typeof form.onboardingStatus)
+              }
+            >
+              <option value="PENDING_DVLA">Pending DVLA</option>
+              <option value="APPROVED">Approved</option>
+            </select>
+          </label>
+          <FieldHelp
+            text="Submit the hours/vehicle disclosure on VOL directly — TM Express can't submit this for you. Once DVLA responds, update the status here."
+            href="https://vehicle-operator-licensing.service.gov.uk/auth/login"
+            linkLabel="Open VOL →"
+          />
+        </div>
         <label>
           Company number
           <input

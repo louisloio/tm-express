@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Vehicle, VehicleInput } from "../lib/api";
 import { toDateInputValue } from "../lib/dates";
+import { FieldHelp } from "./FieldHelp";
 
 interface Props {
   initial?: Vehicle;
@@ -67,6 +68,10 @@ export function VehicleForm({ initial, onSubmit, onCancel }: Props) {
             onChange={(e) => set("type", e.target.value)}
           />
         </label>
+        <p className="field-help span-2">
+          Enter the date each document is valid until, based on the certificate or record you
+          received.
+        </p>
         <label>
           MOT due
           <input
@@ -116,6 +121,9 @@ export function VehicleForm({ initial, onSubmit, onCancel }: Props) {
           />
           Monitored via EBPMS instead of fixed brake test dates
         </label>
+        <div className="span-2">
+          <FieldHelp text="DVSA requires four laden brake tests per year at 65%+ of design axle weight, unless the vehicle uses an approved EBPMS system." />
+        </div>
       </div>
 
       {error && <p className="form-error">{error}</p>}

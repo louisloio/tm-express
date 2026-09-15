@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import clientsRouter from "./routes/clients";
 import { nestedVehicleRouter, vehicleByIdRouter } from "./routes/vehicles";
 import { nestedDriverRouter, driverByIdRouter } from "./routes/drivers";
+import { nestedOcrsScoreRouter, ocrsScoreByIdRouter } from "./routes/ocrsScores";
 
 const app = express();
 const port = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -15,9 +16,11 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 app.use("/api/clients/:clientId/vehicles", nestedVehicleRouter);
 app.use("/api/clients/:clientId/drivers", nestedDriverRouter);
+app.use("/api/clients/:clientId/ocrs-scores", nestedOcrsScoreRouter);
 app.use("/api/clients", clientsRouter);
 app.use("/api/vehicles", vehicleByIdRouter);
 app.use("/api/drivers", driverByIdRouter);
+app.use("/api/ocrs-scores", ocrsScoreByIdRouter);
 
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof ZodError) {

@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Driver, DriverInput } from "../lib/api";
 import { toDateInputValue } from "../lib/dates";
+import { FieldHelp } from "./FieldHelp";
 
 interface Props {
   initial?: Driver;
@@ -45,14 +46,17 @@ export function DriverForm({ initial, onSubmit, onCancel }: Props) {
           Name *
           <input required value={form.name} onChange={(e) => set("name", e.target.value)} />
         </label>
-        <label>
-          Licence check due
-          <input
-            type="date"
-            value={form.licenceCheckDueDate}
-            onChange={(e) => set("licenceCheckDueDate", e.target.value)}
-          />
-        </label>
+        <div className="field">
+          <label>
+            Licence check due
+            <input
+              type="date"
+              value={form.licenceCheckDueDate}
+              onChange={(e) => set("licenceCheckDueDate", e.target.value)}
+            />
+          </label>
+          <FieldHelp text="A data record (e.g. a spreadsheet of licence numbers) isn't enough — DVSA/TC expects the actual scanned document on file." />
+        </div>
         <label>
           CPC due
           <input

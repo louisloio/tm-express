@@ -1,28 +1,38 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, ClientDetail, Driver, Vehicle } from "../lib/api";
+import { api, ClientDetail, Driver, OcrsScore, Vehicle } from "../lib/api";
 import { ClientForm } from "../components/ClientForm";
 import { VehicleForm } from "../components/VehicleForm";
 import { DriverForm } from "../components/DriverForm";
+import { OcrsScoreForm } from "../components/OcrsScoreForm";
 import { Modal } from "../components/Modal";
 import { formatDate, isOverdue } from "../lib/dates";
+import { bandLabel, compareToPrevious } from "../lib/ocrs";
 
 type VehicleModal = { mode: "add" } | { mode: "edit"; vehicle: Vehicle } | null;
 type DriverModal = { mode: "add" } | { mode: "edit"; driver: Driver } | null;
+type OcrsModal = { mode: "add" } | { mode: "edit"; score: OcrsScore } | null;
 
 export function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [client, setClient] = useState<ClientDetail | null>(null);
+  const [ocrsScores, setOcrsScores] = useState<OcrsScore[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingClient, setEditingClient] = useState(false);
   const [vehicleModal, setVehicleModal] = useState<VehicleModal>(null);
   const [driverModal, setDriverModal] = useState<DriverModal>(null);
+  const [ocrsModal, setOcrsModal] = useState<OcrsModal>(null);
 
   async function load() {
     if (!id) return;
     setLoading(true);
-    setClient(await api.getClient(id));
+    const [clientData, scores] = await Promise.all([
+      api.getClient(id),
+      api.listOcrsScores(id),
+    ]);
+    setClient(clientData);
+    setOcrsScores(scores);
     setLoading(false);
   }
 
@@ -51,6 +61,12 @@ export function ClientDetailPage() {
   async function handleDeleteDriver(driver: Driver) {
     if (!confirm(`Delete driver ${driver.name}?`)) return;
     await api.deleteDriver(driver.id);
+    await load();
+  }
+
+  async function handleDeleteOcrsScore(score: OcrsScore) {
+    if (!confirm(`Delete the OCRS entry dated ${formatDate(score.dateRecorded)}?`)) return;
+    await api.deleteOcrsScore(score.id);
     await load();
   }
 
@@ -230,6 +246,79 @@ export function ClientDetailPage() {
         )}
       </section>
 
+      <section className="card">
+        <div className="card-header">
+          <h2>OCRS history ({ocrsScores.length})</h2>
+          <button className="btn btn-primary" onClick={() => setOcrsModal({ mode: "add" })}>
+            + Add OCRS entry
+          </button>
+        </div>
+        {ocrsScores.length === 0 ? (
+          <p className="empty-state">
+            No OCRS entries yet. VOL doesn't expose these via API — log in monthly and enter
+            what you see.
+          </p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Roadworthiness</th>
+                <th>Traffic</th>
+                <th>Band</th>
+                <th>Movement</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...ocrsScores]
+                .reverse()
+                .map((score, i, reversedArr) => {
+                  const previous = reversedArr[i + 1] ?? null;
+                  const movement = compareToPrevious(score, previous);
+                  return (
+                    <tr key={score.id}>
+                      <td>{formatDate(score.dateRecorded)}</td>
+                      <td>{score.roadworthinessScore}</td>
+                      <td>{score.trafficScore}</td>
+                      <td>
+                        <span className={`badge badge-${score.band.toLowerCase()}`}>
+                          {bandLabel[score.band]}
+                        </span>
+                      </td>
+                      <td>
+                        {movement.worsened ? (
+                          <span className="movement-flag" title={movement.reasons.join("; ")}>
+                            ▲ Worsened
+                          </span>
+                        ) : previous ? (
+                          "—"
+                        ) : (
+                          ""
+                        )}
+                      </td>
+                      <td className="row-actions">
+                        <button
+                          className="link-btn"
+                          onClick={() => setOcrsModal({ mode: "edit", score })}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="link-btn danger"
+                          onClick={() => handleDeleteOcrsScore(score)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        )}
+      </section>
+
       {editingClient && (
         <Modal title="Edit client" onClose={() => setEditingClient(false)}>
           <ClientForm
@@ -282,6 +371,27 @@ export function ClientDetailPage() {
               await load();
             }}
             onCancel={() => setDriverModal(null)}
+          />
+        </Modal>
+      )}
+
+      {ocrsModal && (
+        <Modal
+          title={ocrsModal.mode === "add" ? "Add OCRS entry" : "Edit OCRS entry"}
+          onClose={() => setOcrsModal(null)}
+        >
+          <OcrsScoreForm
+            initial={ocrsModal.mode === "edit" ? ocrsModal.score : undefined}
+            onSubmit={async (data) => {
+              if (ocrsModal.mode === "add") {
+                await api.createOcrsScore(client.id, data);
+              } else {
+                await api.updateOcrsScore(ocrsModal.score.id, data);
+              }
+              setOcrsModal(null);
+              await load();
+            }}
+            onCancel={() => setOcrsModal(null)}
           />
         </Modal>
       )}
