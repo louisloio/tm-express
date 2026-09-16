@@ -42,20 +42,6 @@ body {
   letter-spacing: -0.02em;
 }
 
-.demo-banner {
-  background: var(--amber-bg);
-  color: var(--amber);
-  font-size: 13px;
-  padding: 8px 32px;
-  border-bottom: 1px solid var(--border);
-}
-
-.demo-banner .link-btn {
-  color: inherit;
-  font-weight: 600;
-  text-decoration: underline;
-}
-
 .page {
   max-width: 1080px;
   margin: 0 auto;

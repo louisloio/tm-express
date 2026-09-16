@@ -1,7 +1,78 @@
-import { Api, Client, ClientDetail, ClientInput, Driver, DriverInput, OcrsScore, OcrsScoreInput, Vehicle, VehicleInput } from "./types";
-import { mockApi } from "./mockApi";
+export type OnboardingStatus = "PENDING_DVLA" | "APPROVED";
 
-export * from "./types";
+export interface Client {
+  id: string;
+  companyName: string;
+  companyNumber: string | null;
+  vatNumber: string | null;
+  olNumber: string | null;
+  address: string | null;
+  operatingCentreAddress: string | null;
+  phone: string | null;
+  website: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  onboardingStatus: OnboardingStatus;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { vehicles: number; drivers: number };
+}
+
+export interface ClientDetail extends Client {
+  vehicles: Vehicle[];
+  drivers: Driver[];
+}
+
+export interface Vehicle {
+  id: string;
+  clientId: string;
+  registration: string;
+  type: string | null;
+  pmiDueDate: string | null;
+  brakeTestDueDate: string | null;
+  ebpmsFlag: boolean;
+  motDueDate: string | null;
+  vedDueDate: string | null;
+  insuranceDueDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Driver {
+  id: string;
+  clientId: string;
+  name: string;
+  licenceCheckDueDate: string | null;
+  cpcDueDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type OcrsBand = "GREEN" | "AMBER" | "RED" | "GREY" | "BLUE";
+
+export interface OcrsScore {
+  id: string;
+  clientId: string;
+  dateRecorded: string;
+  roadworthinessScore: number;
+  trafficScore: number;
+  band: OcrsBand;
+  createdAt: string;
+}
+
+export type ClientInput = Omit<
+  Client,
+  "id" | "createdAt" | "updatedAt" | "_count"
+>;
+
+export type VehicleInput = Omit<
+  Vehicle,
+  "id" | "clientId" | "createdAt" | "updatedAt"
+>;
+
+export type DriverInput = Omit<Driver, "id" | "clientId" | "createdAt" | "updatedAt">;
+
+export type OcrsScoreInput = Omit<OcrsScore, "id" | "clientId" | "createdAt">;
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -22,7 +93,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
-const realApi: Api = {
+export const api = {
   listClients: () => request<Client[]>("/clients"),
   getClient: (id: string) => request<ClientDetail>(`/clients/${id}`),
   createClient: (data: Partial<ClientInput>) =>
@@ -60,11 +131,3 @@ const realApi: Api = {
     request<OcrsScore>(`/ocrs-scores/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteOcrsScore: (id: string) => request<void>(`/ocrs-scores/${id}`, { method: "DELETE" }),
 };
-
-// The GitHub Pages build (npm run build:demo, VITE_DEMO_MODE=true) has no
-// backend to call, so it runs entirely against localStorage-backed sample
-// data instead. Everywhere else (npm run dev, a real deployment) talks to
-// the real Express API.
-export const api: Api = import.meta.env.VITE_DEMO_MODE === "true" ? mockApi : realApi;
-
-export const isDemoMode = import.meta.env.VITE_DEMO_MODE === "true";
