@@ -249,3 +249,42 @@ No email integration yet — that's Phase 4. Phase 3 makes the "Chase" button on
 - Multi-channel chasing (SMS, phone call logging) — email drafts only
 
 This phase is done when every todo item shows an accurate "next chase due," generates a draft that's actually usable without heavy editing, and escalates to urgent tone appropriately — proven with real PR PROTRANS-style chases before Phase 4 automates the sending and reply-matching around it.
+
+---
+
+## Phase 4 build plan — email connections (stage A: read-only)
+
+This is the first slice of Phase 4, scoped deliberately narrow: a dedicated page to link email accounts via IMAP/SMTP, supporting **multiple accounts**, with **read-only access to past email** for now. No sending, no auto-parsing into client records, and no live/real-time monitoring yet — those come in stage B once the connection layer itself is proven.
+
+### Data model additions
+- **Email account** — TM, label (e.g. "Main inbox", "PR PROTRANS thread"), IMAP host, IMAP port, IMAP username, IMAP password (encrypted at rest), IMAP SSL flag, SMTP host, SMTP port, SMTP username, SMTP password (encrypted at rest), SMTP SSL flag, connection status (connected/error), last synced timestamp
+
+### Screens
+1. **Email Connections page** (new settings page) — list of every linked account: label, host, connection status, last synced. "Add account" button.
+2. **Add/edit account form** — Label, then two grouped sections matching how you'd configure this in Spark: IMAP (host, port, username, password, SSL) and SMTP (host, port, username, password, SSL). A "Test connection" action attempts an IMAP login and, on success, shows a short preview of the most recent few messages right there in the form — so you see real proof it worked before saving, not just a green checkmark.
+3. **Read-only inbox browser** — per connected account, a list of past messages (subject, sender, date), most recent first. Opening one shows the full body and its attachments.
+4. **Attachment access** — since this is a real IMAP connection (not a limited third-party API), attachments can actually be downloaded and viewed here, not just listed by filename — a real improvement over how I could only see metadata through the Gmail connector earlier in this conversation.
+5. **Remove/disconnect account** — a visible action to revoke a connection at any time, per the security requirement already in section 4.
+
+### Build order
+1. Email account data model + encrypted credential storage
+2. Add-account form with test-connection validation
+3. Email Connections page — list view of all linked accounts, supporting multiple per TM
+4. Read-only IMAP fetch — pull message list for a connected account
+5. Message detail view — full body + downloadable attachments
+6. Disconnect/remove action
+
+### Security (carried over from section 4, restated here since this is where it's implemented)
+- Credentials entered directly into this form, never elsewhere
+- Encrypted at rest, decryptable only for that TM's own session
+- Test-connection validates before storing, so a bad password isn't saved blind
+- Visible list of every connected account with a one-click way to remove it
+
+### Deliberately out of scope for this stage (stage B, later)
+- **Sending email** — SMTP details are captured now so the form doesn't need rebuilding later, but no compose/send UI yet
+- **Auto-matching emails to clients** — the domain/manual-address matching model from section 5 isn't wired up yet; this stage is just "can I see what's in the mailbox," not "does TM Express know whose mail this is"
+- **Attachment auto-filing into document records** — attachments are viewable here, but not yet automatically tagged and stored against a vehicle/driver/document type
+- **Real-time/live monitoring** — this is a manual browse-on-demand, not a background watcher
+- **OAuth (Gmail/Outlook)** — you specifically asked for IMAP/SMTP linking now; the OAuth path from section 4 can be added alongside this later without changing the data model much
+
+This stage is done when you can link more than one mailbox (including something like your `mail.transport-managers.com` setup), see a real list of past messages and attachments for each, and trust that removing a connection actually removes it — before any parsing or sending logic gets built on top.
