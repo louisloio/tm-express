@@ -1,6 +1,6 @@
 # TM Express
 
-Phase 1 build: a manual compliance-tracking portal for Transport Managers — client/vehicle/driver records with due-date tracking. No email integration yet (see [tm-express-platform-spec.md](tm-express-platform-spec.md) for the full product spec and phased roadmap).
+A compliance-tracking portal for Transport Managers — client/vehicle/driver records, document evidence, OCRS tracking, and an auto-generated todo queue, all currently manual entry (no email integration yet). See [tm-express-platform-spec.md](tm-express-platform-spec.md) for the full product spec and phased roadmap.
 
 ## Stack
 - **server/** — Node + Express + TypeScript + Prisma + PostgreSQL (REST API)
@@ -42,12 +42,20 @@ cd server
 npm run seed
 ```
 
-## Data model
+## What's built
 
-See the `Phase 1 build plan` section of [tm-express-platform-spec.md](tm-express-platform-spec.md). The Prisma schema (`server/prisma/schema.prisma`) defines the full Phase 1 model — Client, Vehicle, Driver, Document, DepotVisit, Todo — but only Client/Vehicle/Driver have CRUD screens so far. Document upload, freshness/status logic, depot visits, and the todo queue are built out in later steps of the same build order.
+Following the Phase 1 + 2 build order in [tm-express-platform-spec.md](tm-express-platform-spec.md):
 
-## What's deliberately missing (Phase 1 scope)
-- Email integration (parsing, chasing, DVLA onboarding detection)
-- VOL/OCRS pull
-- Document upload UI and the computed Green/Amber/Red compliance status
+- **Client / Vehicle / Driver CRUD**, all-clients Dashboard with a client filter
+- **Document upload** (`server/uploads/`), linked to a vehicle/driver, with an audit-ready "latest per type" view
+- **Compliance status engine** (`server/src/lib/compliance.ts`) — computes each vehicle/driver/client's Green/Amber/Red status from due dates and the depot-visit cadence; uploading a document with a valid-until date pushes the linked due date forward
+- **Todo queue** (`server/src/lib/todoSync.ts`) — auto-generated from missing/overdue items, kept in sync after every relevant mutation; resolves automatically when the underlying document/visit is supplied
+- **Depot visit log**
+- **OCRS tracking** — score history per client, with automatic band/score-movement detection that raises a todo item
+
+"Chase" stays disabled everywhere — draft generation is Phase 3, not built yet.
+
+## What's deliberately missing
+- Email integration (parsing, chasing, DVLA onboarding detection) — Phase 3 (chase drafts) and Phase 4 (IMAP/SMTP connections) are specced but not built
+- VOL/OCRS automated pull — OCRS entries are manual, matching the spec's own scope
 - Multi-tenant support — this is a single-account tool for now

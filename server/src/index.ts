@@ -5,6 +5,10 @@ import clientsRouter from "./routes/clients";
 import { nestedVehicleRouter, vehicleByIdRouter } from "./routes/vehicles";
 import { nestedDriverRouter, driverByIdRouter } from "./routes/drivers";
 import { nestedOcrsScoreRouter, ocrsScoreByIdRouter } from "./routes/ocrsScores";
+import { nestedDocumentRouter, documentByIdRouter } from "./routes/documents";
+import { nestedDepotVisitRouter, depotVisitByIdRouter } from "./routes/depotVisits";
+import { nestedTodoRouter, todoRouter } from "./routes/todos";
+import { dashboardRouter } from "./routes/dashboard";
 
 const app = express();
 const port = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -14,13 +18,22 @@ app.use(express.json());
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
+app.use("/api/dashboard", dashboardRouter);
+app.use("/api/todos", todoRouter);
+
 app.use("/api/clients/:clientId/vehicles", nestedVehicleRouter);
 app.use("/api/clients/:clientId/drivers", nestedDriverRouter);
 app.use("/api/clients/:clientId/ocrs-scores", nestedOcrsScoreRouter);
+app.use("/api/clients/:clientId/documents", nestedDocumentRouter);
+app.use("/api/clients/:clientId/depot-visits", nestedDepotVisitRouter);
+app.use("/api/clients/:clientId/todos", nestedTodoRouter);
 app.use("/api/clients", clientsRouter);
+
 app.use("/api/vehicles", vehicleByIdRouter);
 app.use("/api/drivers", driverByIdRouter);
 app.use("/api/ocrs-scores", ocrsScoreByIdRouter);
+app.use("/api/documents", documentByIdRouter);
+app.use("/api/depot-visits", depotVisitByIdRouter);
 
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof ZodError) {

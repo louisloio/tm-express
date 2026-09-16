@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { ClientsListPage } from "./pages/ClientsListPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { ClientDetailPage } from "./pages/ClientDetailPage";
 
 export function App() {
@@ -11,7 +11,7 @@ export function App() {
         </header>
         <main>
           <Routes>
-            <Route path="/" element={<ClientsListPage />} />
+            <Route path="/" element={<DashboardPage />} />
             <Route path="/clients/:id" element={<ClientDetailPage />} />
           </Routes>
         </main>

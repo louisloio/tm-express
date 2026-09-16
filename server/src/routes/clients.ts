@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import { NotFoundError } from "../lib/errors";
+import { clientComplianceStatus } from "../lib/compliance";
+import { syncTodosForClient } from "../lib/todoSync";
 
 const router = Router();
 
@@ -30,9 +32,17 @@ router.get(
       orderBy: { companyName: "asc" },
       include: {
         _count: { select: { vehicles: true, drivers: true } },
+        vehicles: true,
+        drivers: true,
+        depotVisits: true,
       },
     });
-    res.json(clients);
+    res.json(
+      clients.map(({ vehicles, drivers, depotVisits, ...client }) => ({
+        ...client,
+        complianceStatus: clientComplianceStatus(client, vehicles, drivers, depotVisits),
+      }))
+    );
   })
 );
 
@@ -45,10 +55,15 @@ router.get(
       include: {
         vehicles: { orderBy: { registration: "asc" } },
         drivers: { orderBy: { name: "asc" } },
+        depotVisits: true,
       },
     });
     if (!client) throw new NotFoundError("Client", req.params.id);
-    res.json(client);
+    const { depotVisits, ...rest } = client;
+    res.json({
+      ...rest,
+      complianceStatus: clientComplianceStatus(client, client.vehicles, client.drivers, depotVisits),
+    });
   })
 );
 
@@ -68,6 +83,9 @@ router.put(
     const existing = await prisma.client.findUnique({ where: { id: req.params.id } });
     if (!existing) throw new NotFoundError("Client", req.params.id);
     const client = await prisma.client.update({ where: { id: req.params.id }, data });
+    if (data.onboardingStatus && data.onboardingStatus !== existing.onboardingStatus) {
+      await syncTodosForClient(client.id);
+    }
     res.json(client);
   })
 );

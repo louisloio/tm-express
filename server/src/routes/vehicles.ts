@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import { NotFoundError } from "../lib/errors";
+import { syncTodosForClient } from "../lib/todoSync";
 
 const dateField = z.coerce.date().optional().nullable();
 
@@ -43,6 +44,7 @@ nestedVehicleRouter.post(
 
     const data = vehicleInput.parse(req.body);
     const vehicle = await prisma.vehicle.create({ data: { ...data, clientId } });
+    await syncTodosForClient(clientId);
     res.status(201).json(vehicle);
   })
 );
@@ -66,6 +68,7 @@ vehicleByIdRouter.put(
     const existing = await prisma.vehicle.findUnique({ where: { id: req.params.id } });
     if (!existing) throw new NotFoundError("Vehicle", req.params.id);
     const vehicle = await prisma.vehicle.update({ where: { id: req.params.id }, data });
+    await syncTodosForClient(existing.clientId);
     res.json(vehicle);
   })
 );
@@ -76,6 +79,7 @@ vehicleByIdRouter.delete(
     const existing = await prisma.vehicle.findUnique({ where: { id: req.params.id } });
     if (!existing) throw new NotFoundError("Vehicle", req.params.id);
     await prisma.vehicle.delete({ where: { id: req.params.id } });
+    await syncTodosForClient(existing.clientId);
     res.status(204).end();
   })
 );

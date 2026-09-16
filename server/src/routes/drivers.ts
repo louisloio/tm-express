@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import { NotFoundError } from "../lib/errors";
+import { syncTodosForClient } from "../lib/todoSync";
 
 const dateField = z.coerce.date().optional().nullable();
 
@@ -38,6 +39,7 @@ nestedDriverRouter.post(
 
     const data = driverInput.parse(req.body);
     const driver = await prisma.driver.create({ data: { ...data, clientId } });
+    await syncTodosForClient(clientId);
     res.status(201).json(driver);
   })
 );
@@ -61,6 +63,7 @@ driverByIdRouter.put(
     const existing = await prisma.driver.findUnique({ where: { id: req.params.id } });
     if (!existing) throw new NotFoundError("Driver", req.params.id);
     const driver = await prisma.driver.update({ where: { id: req.params.id }, data });
+    await syncTodosForClient(existing.clientId);
     res.json(driver);
   })
 );
@@ -71,6 +74,7 @@ driverByIdRouter.delete(
     const existing = await prisma.driver.findUnique({ where: { id: req.params.id } });
     if (!existing) throw new NotFoundError("Driver", req.params.id);
     await prisma.driver.delete({ where: { id: req.params.id } });
+    await syncTodosForClient(existing.clientId);
     res.status(204).end();
   })
 );

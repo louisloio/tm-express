@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import { NotFoundError } from "../lib/errors";
+import { compareToPrevious } from "../lib/ocrsMovement";
 
 const ocrsScoreInput = z.object({
   dateRecorded: z.coerce.date(),
@@ -36,7 +37,23 @@ nestedOcrsScoreRouter.post(
     if (!client) throw new NotFoundError("Client", clientId);
 
     const data = ocrsScoreInput.parse(req.body);
+    const previous = await prisma.ocrsScore.findFirst({
+      where: { clientId, dateRecorded: { lt: data.dateRecorded } },
+      orderBy: { dateRecorded: "desc" },
+    });
     const score = await prisma.ocrsScore.create({ data: { ...data, clientId } });
+
+    const movement = compareToPrevious(score, previous);
+    if (movement.worsened) {
+      await prisma.todo.create({
+        data: {
+          type: "OCRS_MOVEMENT",
+          clientId,
+          description: `OCRS worsened (${movement.reasons.join("; ")})`,
+        },
+      });
+    }
+
     res.status(201).json(score);
   })
 );

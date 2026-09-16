@@ -147,15 +147,19 @@ model DepotVisit {
 }
 
 model Todo {
-  id           String     @id @default(cuid())
+  id           String        @id @default(cuid())
   type         TodoType
+  // Which requirement this is about, for MISSING_DOCUMENT/OVERDUE_DOCUMENT
+  // todos — a vehicle can be missing several document types at once, so
+  // type + vehicleId alone isn't enough to tell them apart.
+  documentType DocumentType?
   description  String
   clientId     String
   vehicleId    String?
   driverId     String?
   depotVisitId String?
-  status       TodoStatus @default(OPEN)
-  createdAt    DateTime   @default(now())
+  status       TodoStatus    @default(OPEN)
+  createdAt    DateTime      @default(now())
   resolvedAt   DateTime?
 
   client     Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)

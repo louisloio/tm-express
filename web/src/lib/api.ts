@@ -1,5 +1,7 @@
 export type OnboardingStatus = "PENDING_DVLA" | "APPROVED";
 
+export type ComplianceStatus = "GREEN" | "AMBER" | "RED" | "ONBOARDING";
+
 export interface Client {
   id: string;
   companyName: string;
@@ -16,6 +18,7 @@ export interface Client {
   createdAt: string;
   updatedAt: string;
   _count?: { vehicles: number; drivers: number };
+  complianceStatus?: ComplianceStatus;
 }
 
 export interface ClientDetail extends Client {
@@ -74,6 +77,99 @@ export type DriverInput = Omit<Driver, "id" | "clientId" | "createdAt" | "update
 
 export type OcrsScoreInput = Omit<OcrsScore, "id" | "clientId" | "createdAt">;
 
+export type DocumentType =
+  | "PMI"
+  | "BRAKE_TEST"
+  | "MOT"
+  | "VED"
+  | "INSURANCE"
+  | "LICENCE_CHECK"
+  | "CPC"
+  | "INFRINGEMENT_REPORT"
+  | "DEPOT_VISIT_NOTE"
+  | "OTHER";
+
+export interface Document {
+  id: string;
+  clientId: string;
+  vehicleId: string | null;
+  driverId: string | null;
+  type: DocumentType;
+  fileName: string;
+  filePath: string;
+  uploadDate: string;
+  validUntil: string | null;
+  createdAt: string;
+}
+
+export type FollowUpStatus = "NONE" | "OPEN" | "RESOLVED";
+
+export interface DepotVisit {
+  id: string;
+  clientId: string;
+  date: string;
+  findings: string | null;
+  actionsAgreed: string | null;
+  owner: string | null;
+  followUpStatus: FollowUpStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DepotVisitInput = Omit<DepotVisit, "id" | "clientId" | "createdAt" | "updatedAt">;
+
+export type TodoType =
+  | "MISSING_DOCUMENT"
+  | "OVERDUE_DOCUMENT"
+  | "VISIT_OVERDUE"
+  | "ONBOARDING_STEP"
+  | "OCRS_MOVEMENT"
+  | "INFRINGEMENT";
+
+export type TodoStatus = "OPEN" | "RESOLVED";
+
+export interface Todo {
+  id: string;
+  type: TodoType;
+  documentType: DocumentType | null;
+  description: string;
+  clientId: string;
+  vehicleId: string | null;
+  driverId: string | null;
+  depotVisitId: string | null;
+  status: TodoStatus;
+  createdAt: string;
+  resolvedAt: string | null;
+  client?: { companyName: string };
+}
+
+export interface DashboardClient {
+  id: string;
+  companyName: string;
+  onboardingStatus: OnboardingStatus;
+  complianceStatus: ComplianceStatus;
+  vehicleCount: number;
+  driverCount: number;
+  lastVisitDate: string | null;
+  lastPmiDate: string | null;
+  lastBrakeTestDate: string | null;
+  latestOcrsBand: OcrsBand | null;
+}
+
+export interface DashboardDriver {
+  id: string;
+  clientId: string;
+  clientName: string;
+  name: string;
+  licenceCheckDueDate: string | null;
+  cpcDueDate: string | null;
+}
+
+export interface Dashboard {
+  clients: DashboardClient[];
+  drivers: DashboardDriver[];
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -130,4 +226,41 @@ export const api = {
   updateOcrsScore: (id: string, data: Partial<OcrsScoreInput>) =>
     request<OcrsScore>(`/ocrs-scores/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteOcrsScore: (id: string) => request<void>(`/ocrs-scores/${id}`, { method: "DELETE" }),
+
+  listDocuments: (clientId: string) => request<Document[]>(`/clients/${clientId}/documents`),
+  uploadDocument: async (
+    clientId: string,
+    data: { type: DocumentType; vehicleId?: string | null; driverId?: string | null; validUntil?: string | null; file: File }
+  ) => {
+    const form = new FormData();
+    form.append("type", data.type);
+    if (data.vehicleId) form.append("vehicleId", data.vehicleId);
+    if (data.driverId) form.append("driverId", data.driverId);
+    if (data.validUntil) form.append("validUntil", data.validUntil);
+    form.append("file", data.file);
+    const res = await fetch(`/api/clients/${clientId}/documents`, { method: "POST", body: form });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body.error ?? res.statusText);
+    }
+    return res.json() as Promise<Document>;
+  },
+  documentFileUrl: (id: string) => `/api/documents/${id}/file`,
+  deleteDocument: (id: string) => request<void>(`/documents/${id}`, { method: "DELETE" }),
+
+  listDepotVisits: (clientId: string) => request<DepotVisit[]>(`/clients/${clientId}/depot-visits`),
+  createDepotVisit: (clientId: string, data: Partial<DepotVisitInput>) =>
+    request<DepotVisit>(`/clients/${clientId}/depot-visits`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateDepotVisit: (id: string, data: Partial<DepotVisitInput>) =>
+    request<DepotVisit>(`/depot-visits/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteDepotVisit: (id: string) => request<void>(`/depot-visits/${id}`, { method: "DELETE" }),
+
+  listTodos: (clientId: string) => request<Todo[]>(`/clients/${clientId}/todos`),
+  listAllTodos: () => request<Todo[]>("/todos"),
+  resolveTodo: (id: string) => request<Todo>(`/todos/${id}/resolve`, { method: "POST" }),
+
+  getDashboard: () => request<Dashboard>("/dashboard"),
 };

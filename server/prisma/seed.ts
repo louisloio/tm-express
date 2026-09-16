@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { syncTodosForClient } from "../src/lib/todoSync";
 
 const prisma = new PrismaClient();
 
@@ -74,6 +75,8 @@ async function main() {
       await prisma.driver.create({ data: { ...driver, clientId: client.id } });
     }
   }
+
+  await syncTodosForClient(client.id);
 
   console.log(`Seeded client ${client.companyName} (${client.id})`);
 }
