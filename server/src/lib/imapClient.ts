@@ -1,5 +1,24 @@
 import { ImapFlow } from "imapflow";
+import type { ImapFlowError } from "imapflow";
 import { simpleParser, ParsedMail } from "mailparser";
+
+// imapflow's own err.message is often a generic "Command failed" — the
+// actually useful text (auth rejection reason, server response) lives in
+// these extra properties. Prefer them when present.
+export function describeImapError(err: unknown): string {
+  if (err instanceof Error) {
+    const e = err as ImapFlowError;
+    if (e.authenticationFailed) {
+      return `Authentication failed${e.responseText ? `: ${e.responseText}` : " — check the username and password"}`;
+    }
+    if (e.responseText) return e.responseText;
+    if (e.code === "ETIMEDOUT" || e.code === "ETIMEOUT") {
+      return `Timed out connecting to the server (${e.code})`;
+    }
+    return err.message;
+  }
+  return "Connection failed";
+}
 
 export interface ImapConfig {
   host: string;
@@ -31,12 +50,12 @@ export interface MessageDetail {
   attachments: { index: number; filename: string; contentType: string; size: number }[];
 }
 
-function client(config: ImapConfig): ImapFlow {
+function client(config: ImapConfig, loginMethod?: "LOGIN"): ImapFlow {
   return new ImapFlow({
     host: config.host,
     port: config.port,
     secure: config.secure,
-    auth: { user: config.username, pass: config.password },
+    auth: { user: config.username, pass: config.password, loginMethod },
     logger: false,
     // Local dev servers / some custom-domain hosts use self-signed certs;
     // this is read-only credential testing against a host the TM chose,
@@ -45,9 +64,30 @@ function client(config: ImapConfig): ImapFlow {
   });
 }
 
-async function withMailbox<T>(config: ImapConfig, fn: (c: ImapFlow) => Promise<T>): Promise<T> {
+function isAuthenticateMechanismFailure(err: unknown): boolean {
+  const e = err as ImapFlowError;
+  return Boolean(e?.authenticationFailed && e.executedCommand?.includes("AUTHENTICATE"));
+}
+
+// Some IMAP servers advertise AUTH=PLAIN but actually reject it, only
+// accepting the classic LOGIN command with the same credentials. imapflow
+// prefers AUTHENTICATE by default, so retry with LOGIN forced before
+// concluding the credentials themselves are wrong.
+async function connectWithFallback(config: ImapConfig): Promise<ImapFlow> {
   const c = client(config);
-  await c.connect();
+  try {
+    await c.connect();
+    return c;
+  } catch (err) {
+    if (!isAuthenticateMechanismFailure(err)) throw err;
+    const fallback = client(config, "LOGIN");
+    await fallback.connect();
+    return fallback;
+  }
+}
+
+async function withMailbox<T>(config: ImapConfig, fn: (c: ImapFlow) => Promise<T>): Promise<T> {
+  const c = await connectWithFallback(config);
   try {
     const lock = await c.getMailboxLock("INBOX");
     try {
@@ -87,7 +127,8 @@ export async function testConnection(
     });
     return { ok: true, preview };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Connection failed" };
+    console.error("[imap] test connection failed:", err);
+    return { ok: false, error: describeImapError(err) };
   }
 }
 

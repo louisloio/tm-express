@@ -4,20 +4,29 @@ import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import { NotFoundError } from "../lib/errors";
 import { encrypt, decrypt } from "../lib/crypto";
-import { getAttachment, getMessage, listMessages, testConnection } from "../lib/imapClient";
+import {
+  describeImapError,
+  getAttachment,
+  getMessage,
+  listMessages,
+  testConnection,
+} from "../lib/imapClient";
 
 export const emailAccountRouter = Router();
 
 const connectionInput = z.object({
-  label: z.string().min(1),
-  imapHost: z.string().min(1),
+  label: z.string().trim().min(1),
+  imapHost: z.string().trim().min(1),
   imapPort: z.coerce.number().int().min(1).max(65535),
-  imapUsername: z.string().min(1),
+  // Username, not password: a stray leading/trailing space typed or pasted
+  // into the field is never intentional, but a password legitimately could
+  // contain one — so only usernames get trimmed.
+  imapUsername: z.string().trim().min(1),
   imapPassword: z.string().min(1),
   imapSecure: z.boolean().optional(),
-  smtpHost: z.string().min(1),
+  smtpHost: z.string().trim().min(1),
   smtpPort: z.coerce.number().int().min(1).max(65535),
-  smtpUsername: z.string().min(1),
+  smtpUsername: z.string().trim().min(1),
   smtpPassword: z.string().min(1),
   smtpSecure: z.boolean().optional(),
 });
@@ -139,7 +148,8 @@ emailAccountRouter.get(
       });
       res.json(messages);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Connection failed";
+      console.error("[imap] list messages failed:", err);
+      const message = describeImapError(err);
       await prisma.emailAccount.update({
         where: { id: account.id },
         data: { connectionStatus: "ERROR", connectionError: message },
