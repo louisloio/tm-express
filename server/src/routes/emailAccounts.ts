@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import { NotFoundError } from "../lib/errors";
-import { encrypt, decrypt } from "../lib/crypto";
+import { encrypt } from "../lib/crypto";
 import {
   describeImapError,
   getAttachment,
@@ -11,6 +11,8 @@ import {
   listMessages,
   testConnection,
 } from "../lib/imapClient";
+import { loadImapConfig } from "../lib/emailAccountConfig";
+import { syncAccount } from "../lib/emailIngest";
 
 export const emailAccountRouter = Router();
 
@@ -106,6 +108,24 @@ emailAccountRouter.post(
       select: publicSelect,
     });
     res.status(201).json(account);
+
+    if (result.ok) {
+      // Fire-and-forget: don't make "Save account" wait on a full inbox
+      // scan. Errors are logged and recorded per-message in the ingest log.
+      syncAccount(account.id).catch((err) => console.error("[email-ingest] initial sync failed:", err));
+    }
+  })
+);
+
+emailAccountRouter.get(
+  "/:id/ingest-log",
+  asyncHandler(async (req, res) => {
+    const logs = await prisma.emailIngestLog.findMany({
+      where: { emailAccountId: req.params.id },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    res.json(logs);
   })
 );
 
@@ -118,21 +138,6 @@ emailAccountRouter.delete(
     res.status(204).end();
   })
 );
-
-async function loadImapConfig(id: string) {
-  const account = await prisma.emailAccount.findUnique({ where: { id } });
-  if (!account) throw new NotFoundError("EmailAccount", id);
-  return {
-    account,
-    config: {
-      host: account.imapHost,
-      port: account.imapPort,
-      secure: account.imapSecure,
-      username: account.imapUsername,
-      password: decrypt(account.imapPasswordEncrypted),
-    },
-  };
-}
 
 // Read-only inbox browser (spec Phase 4 screens 3-4) — fetched live on
 // demand, not a background sync, per the stage's own scope.

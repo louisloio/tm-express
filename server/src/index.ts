@@ -10,6 +10,8 @@ import { nestedDepotVisitRouter, depotVisitByIdRouter } from "./routes/depotVisi
 import { nestedTodoRouter, todoRouter } from "./routes/todos";
 import { dashboardRouter } from "./routes/dashboard";
 import { emailAccountRouter } from "./routes/emailAccounts";
+import { prisma } from "./lib/prisma";
+import { syncAccount } from "./lib/emailIngest";
 
 const app = express();
 const port = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -50,6 +52,20 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 };
 
 app.use(errorHandler);
+
+// Phase 4 stage A was explicitly "manual browse-on-demand, not a background
+// watcher" — this poll loop is the automatic-ingestion behaviour requested
+// afterward, layered on top rather than rewriting that stage's own scope.
+const EMAIL_POLL_INTERVAL_MS = 2 * 60 * 1000;
+setInterval(async () => {
+  const accounts = await prisma.emailAccount.findMany({
+    where: { connectionStatus: { in: ["CONNECTED", "UNTESTED"] } },
+    select: { id: true },
+  });
+  for (const { id } of accounts) {
+    await syncAccount(id).catch((err) => console.error(`[email-ingest] poll failed for ${id}:`, err));
+  }
+}, EMAIL_POLL_INTERVAL_MS);
 
 app.listen(port, () => {
   console.log(`TM Express API listening on http://localhost:${port}`);

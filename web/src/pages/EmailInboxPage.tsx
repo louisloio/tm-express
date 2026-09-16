@@ -1,14 +1,29 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import DOMPurify from "dompurify";
-import { api, EmailAccount, MessageDetail, MessageSummary } from "../lib/api";
+import { api, EmailAccount, EmailIngestLog, MessageDetail, MessageSummary } from "../lib/api";
 import { formatDate } from "../lib/dates";
+
+const INGEST_STATUS_LABEL: Record<EmailIngestLog["status"], string> = {
+  FILED: "Filed",
+  SKIPPED_NO_CLIENT: "No client matched",
+  SKIPPED_NOT_DOCUMENT: "Not a document",
+  ERROR: "Error",
+};
+
+const INGEST_STATUS_BADGE: Record<EmailIngestLog["status"], string> = {
+  FILED: "badge-green",
+  SKIPPED_NO_CLIENT: "badge-grey",
+  SKIPPED_NOT_DOCUMENT: "badge-grey",
+  ERROR: "badge-red",
+};
 
 export function EmailInboxPage() {
   const { id } = useParams<{ id: string }>();
   const [account, setAccount] = useState<EmailAccount | null>(null);
   const [messages, setMessages] = useState<MessageSummary[]>([]);
   const [selected, setSelected] = useState<MessageDetail | null>(null);
+  const [ingestLog, setIngestLog] = useState<EmailIngestLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,9 +33,14 @@ export function EmailInboxPage() {
     setLoading(true);
     setError(null);
     try {
-      const [accounts, msgs] = await Promise.all([api.listEmailAccounts(), api.listEmailMessages(id)]);
+      const [accounts, msgs, log] = await Promise.all([
+        api.listEmailAccounts(),
+        api.listEmailMessages(id),
+        api.listEmailIngestLog(id),
+      ]);
       setAccount(accounts.find((a) => a.id === id) ?? null);
       setMessages(msgs);
+      setIngestLog(log);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load messages");
     } finally {
@@ -148,6 +168,45 @@ export function EmailInboxPage() {
           )}
         </section>
       </div>
+
+      <section className="card">
+        <h2>Auto-fill activity ({ingestLog.length})</h2>
+        <p className="field-help" style={{ marginBottom: 12 }}>
+          Every message this account has scanned, and what happened to it — filing is
+          automatic, not a review queue, so this is the audit trail rather than an approval
+          step.
+        </p>
+        {ingestLog.length === 0 ? (
+          <p className="empty-state">Nothing scanned yet.</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Subject</th>
+                <th>From</th>
+                <th>Status</th>
+                <th>Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ingestLog.map((log) => (
+                <tr key={log.id}>
+                  <td>{formatDate(log.createdAt)}</td>
+                  <td>{log.subject}</td>
+                  <td>{log.fromAddress}</td>
+                  <td>
+                    <span className={`badge ${INGEST_STATUS_BADGE[log.status]}`}>
+                      {INGEST_STATUS_LABEL[log.status]}
+                    </span>
+                  </td>
+                  <td>{log.summary}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </div>
   );
 }

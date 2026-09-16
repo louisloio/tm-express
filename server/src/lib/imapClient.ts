@@ -197,6 +197,52 @@ export async function getMessage(config: ImapConfig, uid: number): Promise<Messa
   };
 }
 
+export interface IngestMessage {
+  uid: number;
+  subject: string;
+  from: string;
+  parsed: ParsedMail;
+}
+
+const FIRST_SYNC_LIMIT = 25;
+
+// Messages newer than `sinceUid` (exclusive), fully parsed with attachments
+// ready to classify. On the very first sync for an account (sinceUid is
+// null), bounded to the most recent messages rather than the whole mailbox
+// history — connecting an account shouldn't trigger processing years of
+// old mail.
+export async function fetchNewMessages(
+  config: ImapConfig,
+  sinceUid: number | null
+): Promise<IngestMessage[]> {
+  return withMailbox(config, async (c) => {
+    const total = c.mailbox && "exists" in c.mailbox ? c.mailbox.exists : 0;
+    if (total === 0) return [];
+
+    const isFirstSync = sinceUid === null;
+    const range = isFirstSync
+      ? `${Math.max(1, total - FIRST_SYNC_LIMIT + 1)}:${total}`
+      : `${sinceUid + 1}:*`;
+
+    const messages: IngestMessage[] = [];
+    for await (const msg of c.fetch(
+      range,
+      { source: true, envelope: true, uid: true },
+      isFirstSync ? undefined : { uid: true }
+    )) {
+      if (!msg.source) continue;
+      const parsed = await simpleParser(msg.source);
+      messages.push({
+        uid: msg.uid,
+        subject: msg.envelope?.subject ?? "(no subject)",
+        from: envelopeFrom(msg.envelope ?? {}),
+        parsed,
+      });
+    }
+    return messages.sort((a, b) => a.uid - b.uid);
+  });
+}
+
 export async function getAttachment(
   config: ImapConfig,
   uid: number,

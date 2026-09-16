@@ -236,6 +236,20 @@ export type TestConnectionResult =
   | { ok: true; preview: MessagePreview[] }
   | { ok: false; error: string };
 
+export type EmailIngestStatus = "FILED" | "SKIPPED_NO_CLIENT" | "SKIPPED_NOT_DOCUMENT" | "ERROR";
+
+export interface EmailIngestLog {
+  id: string;
+  emailAccountId: string;
+  messageUid: number;
+  subject: string;
+  fromAddress: string;
+  clientId: string | null;
+  status: EmailIngestStatus;
+  summary: string;
+  createdAt: string;
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -345,4 +359,6 @@ export const api = {
     request<MessageDetail>(`/email-accounts/${accountId}/messages/${uid}`),
   emailAttachmentUrl: (accountId: string, uid: number, index: number) =>
     `/api/email-accounts/${accountId}/messages/${uid}/attachments/${index}`,
+  listEmailIngestLog: (accountId: string) =>
+    request<EmailIngestLog[]>(`/email-accounts/${accountId}/ingest-log`),
 };

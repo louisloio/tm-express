@@ -207,6 +207,35 @@ model EmailAccount {
   connectionStatus      EmailConnectionStatus @default(UNTESTED)
   connectionError       String?
   lastSyncedAt          DateTime?
+  // Highest IMAP UID processed by the auto-ingest pipeline so far — new
+  // syncs only look at messages with a higher UID than this.
+  lastProcessedUid      Int?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
+
+  ingestLogs EmailIngestLog[]
+}
+
+enum EmailIngestStatus {
+  FILED
+  SKIPPED_NO_CLIENT
+  SKIPPED_NOT_DOCUMENT
+  ERROR
+}
+
+// One row per email message the auto-ingest pipeline has looked at — not a
+// review gate (filing happens immediately), just an audit trail so an
+// auto-filed document is never a silent guess. See spec section 5.
+model EmailIngestLog {
+  id             String            @id @default(cuid())
+  emailAccountId String
+  messageUid     Int
+  subject        String
+  fromAddress    String
+  clientId       String?
+  status         EmailIngestStatus
+  summary        String
+  createdAt      DateTime          @default(now())
+
+  emailAccount EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
 }
