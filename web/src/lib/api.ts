@@ -170,6 +170,72 @@ export interface Dashboard {
   drivers: DashboardDriver[];
 }
 
+export type EmailConnectionStatus = "UNTESTED" | "CONNECTED" | "ERROR";
+
+export interface EmailAccount {
+  id: string;
+  label: string;
+  imapHost: string;
+  imapPort: number;
+  imapUsername: string;
+  imapSecure: boolean;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUsername: string;
+  smtpSecure: boolean;
+  connectionStatus: EmailConnectionStatus;
+  connectionError: string | null;
+  lastSyncedAt: string | null;
+  createdAt: string;
+}
+
+export interface EmailAccountInput {
+  label: string;
+  imapHost: string;
+  imapPort: number;
+  imapUsername: string;
+  imapPassword: string;
+  imapSecure: boolean;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUsername: string;
+  smtpPassword: string;
+  smtpSecure: boolean;
+}
+
+export interface MessagePreview {
+  uid: number;
+  subject: string;
+  from: string;
+  date: string | null;
+}
+
+export interface MessageSummary extends MessagePreview {
+  hasAttachments: boolean;
+}
+
+export interface MessageAttachment {
+  index: number;
+  filename: string;
+  contentType: string;
+  size: number;
+}
+
+export interface MessageDetail {
+  uid: number;
+  subject: string;
+  from: string;
+  to: string;
+  date: string | null;
+  text: string | null;
+  html: string | null;
+  attachments: MessageAttachment[];
+}
+
+export type TestConnectionResult =
+  | { ok: true; preview: MessagePreview[] }
+  | { ok: false; error: string };
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -263,4 +329,20 @@ export const api = {
   resolveTodo: (id: string) => request<Todo>(`/todos/${id}/resolve`, { method: "POST" }),
 
   getDashboard: () => request<Dashboard>("/dashboard"),
+
+  listEmailAccounts: () => request<EmailAccount[]>("/email-accounts"),
+  testEmailAccount: (data: EmailAccountInput) =>
+    request<TestConnectionResult>("/email-accounts/test", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  createEmailAccount: (data: EmailAccountInput) =>
+    request<EmailAccount>("/email-accounts", { method: "POST", body: JSON.stringify(data) }),
+  deleteEmailAccount: (id: string) => request<void>(`/email-accounts/${id}`, { method: "DELETE" }),
+  listEmailMessages: (accountId: string) =>
+    request<MessageSummary[]>(`/email-accounts/${accountId}/messages`),
+  getEmailMessage: (accountId: string, uid: number) =>
+    request<MessageDetail>(`/email-accounts/${accountId}/messages/${uid}`),
+  emailAttachmentUrl: (accountId: string, uid: number, index: number) =>
+    `/api/email-accounts/${accountId}/messages/${uid}/attachments/${index}`,
 };

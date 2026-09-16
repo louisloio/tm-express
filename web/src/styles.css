@@ -34,12 +34,31 @@ body {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .app-logo {
   font-weight: 700;
   font-size: 18px;
   letter-spacing: -0.02em;
+}
+
+.app-nav {
+  display: flex;
+  gap: 16px;
+}
+
+.app-nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.app-nav a:hover {
+  color: var(--text);
 }
 
 .page {
@@ -493,4 +512,41 @@ h2 {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 20px;
+}
+
+.form-section-title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin: 20px 0 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.test-result {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.test-result ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.test-result-ok {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.test-result-error {
+  background: var(--red-bg);
+  color: var(--danger);
+}
+
+.account-status {
+  font-size: 12px;
+  color: var(--text-muted);
 }

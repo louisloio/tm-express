@@ -1,6 +1,6 @@
 # TM Express
 
-A compliance-tracking portal for Transport Managers — client/vehicle/driver records, document evidence, OCRS tracking, and an auto-generated todo queue, all currently manual entry (no email integration yet). See [tm-express-platform-spec.md](tm-express-platform-spec.md) for the full product spec and phased roadmap.
+A compliance-tracking portal for Transport Managers — client/vehicle/driver records, document evidence, OCRS tracking, an auto-generated todo queue, and read-only email account connections. See [tm-express-platform-spec.md](tm-express-platform-spec.md) for the full product spec and phased roadmap.
 
 ## Stack
 - **server/** — Node + Express + TypeScript + Prisma + PostgreSQL (REST API)
@@ -19,6 +19,7 @@ createdb tm_express_dev
 # 2. Server
 cd server
 cp .env.example .env   # edit DATABASE_URL to match your Postgres user
+echo "ENCRYPTION_KEY=$(openssl rand -hex 32)" >> .env   # for email account credentials at rest
 npm install
 npx prisma migrate dev
 npm run dev             # http://localhost:4000
@@ -44,8 +45,9 @@ npm run seed
 
 ## What's built
 
-Following the Phase 1 + 2 build order in [tm-express-platform-spec.md](tm-express-platform-spec.md):
+Following the build order in [tm-express-platform-spec.md](tm-express-platform-spec.md):
 
+**Phase 1 + 2** — data model, compliance tracking, OCRS:
 - **Client / Vehicle / Driver CRUD**, all-clients Dashboard with a client filter
 - **Document upload** (`server/uploads/`), linked to a vehicle/driver, with an audit-ready "latest per type" view
 - **Compliance status engine** (`server/src/lib/compliance.ts`) — computes each vehicle/driver/client's Green/Amber/Red status from due dates and the depot-visit cadence; uploading a document with a valid-until date pushes the linked due date forward
@@ -53,9 +55,16 @@ Following the Phase 1 + 2 build order in [tm-express-platform-spec.md](tm-expres
 - **Depot visit log**
 - **OCRS tracking** — score history per client, with automatic band/score-movement detection that raises a todo item
 
+**Phase 4 stage A** — email connections (read-only), skipping ahead of Phase 3:
+- **Email account** model with IMAP/SMTP settings; passwords encrypted at rest with AES-256-GCM (`server/src/lib/crypto.ts`, key from `ENCRYPTION_KEY`)
+- **Add account form** (`/email-connections`) — "Test connection" attempts a real IMAP login and previews the most recent messages before the account can be saved
+- **Read-only inbox browser** (`/email-connections/:id`) — message list, full body (HTML sanitized with DOMPurify before rendering), and downloadable attachments, fetched live on demand via [imapflow](https://imapflow.com) + [mailparser](https://nodemailer.com/extras/mailparser/)
+- No sending, no auto-matching to clients, no live/background sync — see the spec's "deliberately out of scope" list for this stage
+
 "Chase" stays disabled everywhere — draft generation is Phase 3, not built yet.
 
 ## What's deliberately missing
-- Email integration (parsing, chasing, DVLA onboarding detection) — Phase 3 (chase drafts) and Phase 4 (IMAP/SMTP connections) are specced but not built
+- **Phase 3** (chase drafts, escalation, chase history) — specced but not built
+- Sending email, auto-filing attachments into client documents, OAuth (Gmail/Outlook) — Phase 4 stage B
 - VOL/OCRS automated pull — OCRS entries are manual, matching the spec's own scope
 - Multi-tenant support — this is a single-account tool for now

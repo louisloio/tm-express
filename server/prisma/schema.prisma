@@ -181,3 +181,32 @@ model OcrsScore {
 
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
+
+enum EmailConnectionStatus {
+  UNTESTED
+  CONNECTED
+  ERROR
+}
+
+// Phase 4 stage A (read-only). No "TM" field yet — single-tenant, like
+// everything else in this build. Passwords are encrypted at rest
+// (server/src/lib/crypto.ts) and never returned by the API.
+model EmailAccount {
+  id                    String                @id @default(cuid())
+  label                 String
+  imapHost              String
+  imapPort              Int
+  imapUsername          String
+  imapPasswordEncrypted String
+  imapSecure            Boolean               @default(true)
+  smtpHost              String
+  smtpPort              Int
+  smtpUsername          String
+  smtpPasswordEncrypted String
+  smtpSecure            Boolean               @default(true)
+  connectionStatus      EmailConnectionStatus @default(UNTESTED)
+  connectionError       String?
+  lastSyncedAt          DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+}

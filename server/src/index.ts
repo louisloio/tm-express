@@ -9,6 +9,7 @@ import { nestedDocumentRouter, documentByIdRouter } from "./routes/documents";
 import { nestedDepotVisitRouter, depotVisitByIdRouter } from "./routes/depotVisits";
 import { nestedTodoRouter, todoRouter } from "./routes/todos";
 import { dashboardRouter } from "./routes/dashboard";
+import { emailAccountRouter } from "./routes/emailAccounts";
 
 const app = express();
 const port = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -20,6 +21,7 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/todos", todoRouter);
+app.use("/api/email-accounts", emailAccountRouter);
 
 app.use("/api/clients/:clientId/vehicles", nestedVehicleRouter);
 app.use("/api/clients/:clientId/drivers", nestedDriverRouter);
