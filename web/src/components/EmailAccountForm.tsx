@@ -36,11 +36,24 @@ export function EmailAccountForm({ onDone, onCancel }: Props) {
     setTestResult(null);
   }
 
+  // A stray leading/trailing space typed or pasted into a host/username
+  // field is never intentional (unlike a password, which is left as-is).
+  function trimmed(): EmailAccountInput {
+    return {
+      ...form,
+      label: form.label.trim(),
+      imapHost: form.imapHost.trim(),
+      imapUsername: form.imapUsername.trim(),
+      smtpHost: form.smtpHost.trim(),
+      smtpUsername: form.smtpUsername.trim(),
+    };
+  }
+
   async function handleTest() {
     setTesting(true);
     setError(null);
     try {
-      const result = await api.testEmailAccount(form);
+      const result = await api.testEmailAccount(trimmed());
       setTestResult(result);
     } catch (err) {
       setTestResult({ ok: false, error: err instanceof Error ? err.message : "Test failed" });
@@ -54,7 +67,7 @@ export function EmailAccountForm({ onDone, onCancel }: Props) {
     setSaving(true);
     setError(null);
     try {
-      await api.createEmailAccount(form);
+      await api.createEmailAccount(trimmed());
       await onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
