@@ -1,8 +1,12 @@
 name: Deploy static demo to GitHub Pages
 
+# Lives only on the `static` branch — `main` keeps the real API-backed app,
+# this branch holds the localStorage/mock-data build that gets published to
+# GitHub Pages. Merge frontend changes from main into this branch to bring
+# the demo up to date.
 on:
   push:
-    branches: [main]
+    branches: [static]
     paths:
       - "web/**"
       - ".github/workflows/deploy-pages.yml"
