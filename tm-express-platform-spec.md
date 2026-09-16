@@ -217,3 +217,35 @@ Most of what was originally scoped for Phase 2 (Green/Amber/Red logic, freshness
 - Predictive scoring or trend forecasting — just tracking and flagging actual entries, nothing speculative
 
 This phase is done when you have a running record of each client's OCRS history in TM Express, and a band worsening shows up as a todo item the same way an overdue document does.
+
+---
+
+## Phase 3 build plan — chase cycle (draft-only)
+
+No email integration yet — that's Phase 4. Phase 3 makes the "Chase" button on a todo item actually do something useful: generate the right draft text on the right cadence, which you then manually copy into your own email client and send. This validates the wording and the 3-day cadence against real client responses before any of it is trusted to run on its own.
+
+### Data model additions
+- **Chase** — linked todo item, variant (polite/urgent), draft text generated, date generated, date manually confirmed sent, response status (no response / replied / resolved)
+- Extend **Todo** with: last chased date, next chase due date (chased date + 3 days), escalation level (starts polite, escalates to urgent after N unanswered chases — confirm N, e.g. 2)
+
+### Screens
+1. Chase draft view — opened from a todo item's "Chase" action, shows the generated draft (polite or urgent, based on escalation level), editable before you copy it out
+2. "Mark as sent" action — confirms you've actually sent it via your own email client, which resets the 3-day countdown and logs the chase
+3. Chase history per todo item / per client — every chase sent, when, which variant, and whether it led to resolution
+4. Todo item now shows "next chase due" alongside its existing status, so the dashboard reflects the cadence, not just the underlying anomaly
+
+### Build order
+1. Draft templates per todo type (missing PMI, missing brake test, missing driver document, overdue depot visit, etc.) — polite and urgent variants for each
+2. Template population — pull in the actual client name, vehicle reg, document type, and how many days overdue, so drafts read as specific, not generic
+3. 3-day cadence tracking — compute next-due date from last-chased date, surface it on the todo item
+4. Escalation logic — after a defined number of unanswered chases, switch template variant from polite to urgent
+5. "Mark as sent" and "mark as replied/resolved" actions, updating the chase and todo records
+6. Chase history view, feeding the audit trail from section 3 (TM conduct record) — this is the evidence trail that matters most if anything is ever questioned
+7. Wire the real "Chase" button into the todo list (section 8), replacing the disabled placeholder from Phase 1
+
+### Deliberately out of scope for Phase 3
+- Actually sending the email automatically — still copy-paste into your own client, since there's no inbox connection yet
+- Detecting a client's reply automatically — that requires reading the inbox, which is Phase 4. For now, you mark a chase as "replied" yourself once you see the response
+- Multi-channel chasing (SMS, phone call logging) — email drafts only
+
+This phase is done when every todo item shows an accurate "next chase due," generates a draft that's actually usable without heavy editing, and escalates to urgent tone appropriately — proven with real PR PROTRANS-style chases before Phase 4 automates the sending and reply-matching around it.
