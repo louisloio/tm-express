@@ -204,32 +204,38 @@ export interface IngestMessage {
   parsed: ParsedMail;
 }
 
-const FIRST_SYNC_LIMIT = 25;
+// On the very first sync for an account (sinceUid is null), bounded by date
+// rather than the whole mailbox history — connecting an account backfills
+// the last year, not everything that's ever arrived.
+const FIRST_SYNC_LOOKBACK_DAYS = 360;
 
-// Messages newer than `sinceUid` (exclusive), fully parsed with attachments
-// ready to classify. On the very first sync for an account (sinceUid is
-// null), bounded to the most recent messages rather than the whole mailbox
-// history — connecting an account shouldn't trigger processing years of
-// old mail.
-export async function fetchNewMessages(
-  config: ImapConfig,
-  sinceUid: number | null
-): Promise<IngestMessage[]> {
+// Some mail servers drop a connection that stays open too long fetching many
+// full messages in one FETCH stream (seen in practice: "Connection not
+// available" partway through 100 messages). Fetching UIDs in small batches,
+// each its own connect/logout, keeps any single connection short-lived —
+// and since the caller persists progress after every batch, a mid-scan
+// drop only costs that one batch, not the whole run.
+const FETCH_BATCH_SIZE = 15;
+
+async function getMailboxTotal(config: ImapConfig): Promise<number> {
+  return withMailbox(config, async (c) => (c.mailbox && "exists" in c.mailbox ? c.mailbox.exists : 0));
+}
+
+// Cheap pass: just the UIDs matching a range/search, no message bodies.
+async function resolveUids(config: ImapConfig, range: Parameters<ImapFlow["fetch"]>[0]): Promise<number[]> {
   return withMailbox(config, async (c) => {
-    const total = c.mailbox && "exists" in c.mailbox ? c.mailbox.exists : 0;
-    if (total === 0) return [];
+    const uids: number[] = [];
+    for await (const msg of c.fetch(range, { uid: true }, { uid: true })) {
+      uids.push(msg.uid);
+    }
+    return uids.sort((a, b) => a - b);
+  });
+}
 
-    const isFirstSync = sinceUid === null;
-    const range = isFirstSync
-      ? `${Math.max(1, total - FIRST_SYNC_LIMIT + 1)}:${total}`
-      : `${sinceUid + 1}:*`;
-
+async function fetchUidBatch(config: ImapConfig, uids: number[]): Promise<IngestMessage[]> {
+  return withMailbox(config, async (c) => {
     const messages: IngestMessage[] = [];
-    for await (const msg of c.fetch(
-      range,
-      { source: true, envelope: true, uid: true },
-      isFirstSync ? undefined : { uid: true }
-    )) {
+    for await (const msg of c.fetch(uids, { source: true, envelope: true, uid: true }, { uid: true })) {
       if (!msg.source) continue;
       const parsed = await simpleParser(msg.source);
       messages.push({
@@ -241,6 +247,63 @@ export async function fetchNewMessages(
     }
     return messages.sort((a, b) => a.uid - b.uid);
   });
+}
+
+// Resolves which UIDs match, then fetches them in small batches, calling
+// `onBatch` after each one completes — the caller (emailIngest.ts) uses
+// that to classify/file and persist a cursor as it goes, rather than
+// waiting for the whole set before anything is durable.
+async function fetchInBatches(
+  config: ImapConfig,
+  uids: number[],
+  onBatch: (messages: IngestMessage[]) => Promise<void>
+): Promise<void> {
+  for (let i = 0; i < uids.length; i += FETCH_BATCH_SIZE) {
+    const batchUids = uids.slice(i, i + FETCH_BATCH_SIZE);
+    console.log(
+      `[imap] fetching batch ${Math.floor(i / FETCH_BATCH_SIZE) + 1}/${Math.ceil(uids.length / FETCH_BATCH_SIZE)} (${batchUids.length} message(s))`
+    );
+    const messages = await fetchUidBatch(config, batchUids);
+    await onBatch(messages);
+  }
+}
+
+// Messages newer than `sinceUid` (exclusive) on later syncs, or everything
+// within the lookback window on the first one. Fetched in short-lived
+// batches — see FETCH_BATCH_SIZE.
+export async function fetchNewMessages(
+  config: ImapConfig,
+  sinceUid: number | null,
+  onBatch: (messages: IngestMessage[]) => Promise<void>
+): Promise<void> {
+  const total = await getMailboxTotal(config);
+  console.log(`[imap] mailbox has ${total} message(s) total; lastProcessedUid=${sinceUid}`);
+  if (total === 0) return;
+
+  const isFirstSync = sinceUid === null;
+  const range = isFirstSync
+    ? { since: new Date(Date.now() - FIRST_SYNC_LOOKBACK_DAYS * 24 * 60 * 60 * 1000) }
+    : `${sinceUid + 1}:*`;
+
+  const uids = await resolveUids(config, range);
+  console.log(`[imap] ${uids.length} message(s) match the sync criteria`);
+  await fetchInBatches(config, uids, onBatch);
+}
+
+// Always the most recent `limit` messages, ignoring lastProcessedUid — for
+// the user-triggered "rescan" action, independent of the incremental sync.
+export async function fetchRecentMessages(
+  config: ImapConfig,
+  limit: number,
+  onBatch: (messages: IngestMessage[]) => Promise<void>
+): Promise<void> {
+  const total = await getMailboxTotal(config);
+  console.log(`[imap] mailbox has ${total} message(s) total; rescanning last ${limit}`);
+  if (total === 0) return;
+
+  const range = `${Math.max(1, total - limit + 1)}:${total}`;
+  const uids = await resolveUids(config, range);
+  await fetchInBatches(config, uids, onBatch);
 }
 
 export async function getAttachment(

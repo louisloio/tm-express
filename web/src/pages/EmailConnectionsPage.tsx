@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, EmailAccount } from "../lib/api";
+import { api, EmailAccount, IngestSummary } from "../lib/api";
 import { EmailAccountForm } from "../components/EmailAccountForm";
 import { Modal } from "../components/Modal";
 import { formatDate } from "../lib/dates";
@@ -17,10 +17,21 @@ const statusBadgeClass: Record<EmailAccount["connectionStatus"], string> = {
   ERROR: "badge-red",
 };
 
+function summarizeIngest(s: IngestSummary): string {
+  const parts = [`${s.scanned} scanned`, `${s.filed} filed`];
+  if (s.skippedNoClient > 0) parts.push(`${s.skippedNoClient} no client matched`);
+  if (s.skippedNotDocument > 0) parts.push(`${s.skippedNotDocument} not a document`);
+  if (s.alreadyFiled > 0) parts.push(`${s.alreadyFiled} already filed`);
+  if (s.errors > 0) parts.push(`${s.errors} errors`);
+  return parts.join(", ");
+}
+
 export function EmailConnectionsPage() {
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [rescanningId, setRescanningId] = useState<string | null>(null);
+  const [rescanResult, setRescanResult] = useState<{ accountId: string; text: string } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -37,6 +48,23 @@ export function EmailConnectionsPage() {
       return;
     await api.deleteEmailAccount(account.id);
     await load();
+  }
+
+  async function handleRescan(account: EmailAccount) {
+    setRescanningId(account.id);
+    setRescanResult(null);
+    try {
+      const summary = await api.rescanEmailAccount(account.id);
+      setRescanResult({ accountId: account.id, text: summarizeIngest(summary) });
+    } catch (err) {
+      setRescanResult({
+        accountId: account.id,
+        text: err instanceof Error ? `Failed: ${err.message}` : "Rescan failed",
+      });
+    } finally {
+      setRescanningId(null);
+      await load();
+    }
   }
 
   return (
@@ -58,8 +86,8 @@ export function EmailConnectionsPage() {
           <p>Loading…</p>
         ) : accounts.length === 0 ? (
           <p className="empty-state">
-            No mailboxes linked yet. Add one to browse its inbox read-only — no sending or
-            auto-filing yet, that's a later stage.
+            No mailboxes linked yet. Add one to start auto-filing compliance documents from its
+            inbox.
           </p>
         ) : (
           <table className="table">
@@ -88,9 +116,20 @@ export function EmailConnectionsPage() {
                     {a.connectionStatus === "ERROR" && a.connectionError && (
                       <div className="account-status">{a.connectionError}</div>
                     )}
+                    {rescanResult?.accountId === a.id && (
+                      <div className="account-status">{rescanResult.text}</div>
+                    )}
                   </td>
                   <td>{a.lastSyncedAt ? formatDate(a.lastSyncedAt) : "Never"}</td>
                   <td className="row-actions">
+                    <button
+                      className="link-btn"
+                      disabled={rescanningId === a.id}
+                      onClick={() => handleRescan(a)}
+                      title="Re-scan the last 100 messages, ignoring what's already been processed"
+                    >
+                      {rescanningId === a.id ? "Scanning…" : "Rescan last 100"}
+                    </button>
                     <button className="link-btn danger" onClick={() => handleDelete(a)}>
                       Disconnect
                     </button>

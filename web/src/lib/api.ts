@@ -250,6 +250,15 @@ export interface EmailIngestLog {
   createdAt: string;
 }
 
+export interface IngestSummary {
+  scanned: number;
+  filed: number;
+  skippedNoClient: number;
+  skippedNotDocument: number;
+  alreadyFiled: number;
+  errors: number;
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -353,6 +362,8 @@ export const api = {
   createEmailAccount: (data: EmailAccountInput) =>
     request<EmailAccount>("/email-accounts", { method: "POST", body: JSON.stringify(data) }),
   deleteEmailAccount: (id: string) => request<void>(`/email-accounts/${id}`, { method: "DELETE" }),
+  rescanEmailAccount: (id: string) =>
+    request<IngestSummary>(`/email-accounts/${id}/rescan`, { method: "POST" }),
   listEmailMessages: (accountId: string) =>
     request<MessageSummary[]>(`/email-accounts/${accountId}/messages`),
   getEmailMessage: (accountId: string, uid: number) =>

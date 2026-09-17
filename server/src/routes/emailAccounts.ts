@@ -12,7 +12,7 @@ import {
   testConnection,
 } from "../lib/imapClient";
 import { loadImapConfig } from "../lib/emailAccountConfig";
-import { syncAccount } from "../lib/emailIngest";
+import { rescanAccount, syncAccount } from "../lib/emailIngest";
 
 export const emailAccountRouter = Router();
 
@@ -113,6 +113,29 @@ emailAccountRouter.post(
       // Fire-and-forget: don't make "Save account" wait on a full inbox
       // scan. Errors are logged and recorded per-message in the ingest log.
       syncAccount(account.id).catch((err) => console.error("[email-ingest] initial sync failed:", err));
+    }
+  })
+);
+
+// User-triggered rescan of the last 100 messages, regardless of what the
+// incremental poll has already covered — for "I know something should
+// have shown up, why didn't it". Synchronous so the UI can show a result
+// straight away rather than polling the ingest log to find out.
+emailAccountRouter.post(
+  "/:id/rescan",
+  asyncHandler(async (req, res) => {
+    const account = await prisma.emailAccount.findUnique({ where: { id: req.params.id } });
+    if (!account) throw new NotFoundError("EmailAccount", req.params.id);
+    try {
+      const summary = await rescanAccount(req.params.id, 100);
+      res.json(summary);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("already in progress")) {
+        res.status(409).json({ error: err.message });
+        return;
+      }
+      // doRescanAccount() already recorded the ERROR status on the account.
+      res.status(502).json({ error: describeImapError(err) });
     }
   })
 );

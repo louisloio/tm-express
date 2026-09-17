@@ -25,6 +25,8 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [filterClientId, setFilterClientId] = useState<string>("");
+  const [rescanning, setRescanning] = useState(false);
+  const [rescanMessage, setRescanMessage] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -35,6 +37,37 @@ export function DashboardPage() {
     setDashboard(dashboardData);
     setTodos(todosData);
     setLoading(false);
+  }
+
+  async function handleRescanEmail() {
+    setRescanning(true);
+    setRescanMessage(null);
+    try {
+      const accounts = await api.listEmailAccounts();
+      if (accounts.length === 0) {
+        setRescanMessage("No email accounts linked yet.");
+        return;
+      }
+      let totalFiled = 0;
+      let totalScanned = 0;
+      const errors: string[] = [];
+      for (const account of accounts) {
+        try {
+          const summary = await api.rescanEmailAccount(account.id);
+          totalFiled += summary.filed;
+          totalScanned += summary.scanned;
+        } catch (err) {
+          errors.push(`${account.label}: ${err instanceof Error ? err.message : "failed"}`);
+        }
+      }
+      setRescanMessage(
+        `Scanned ${totalScanned} message(s) across ${accounts.length} account(s), filed ${totalFiled}.` +
+          (errors.length > 0 ? ` Errors — ${errors.join("; ")}` : "")
+      );
+      await load();
+    } finally {
+      setRescanning(false);
+    }
   }
 
   useEffect(() => {
@@ -73,11 +106,20 @@ export function DashboardPage() {
               </option>
             ))}
           </select>
+          <button className="btn btn-secondary" onClick={handleRescanEmail} disabled={rescanning}>
+            {rescanning ? "Scanning…" : "Rescan email"}
+          </button>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
             + Add client
           </button>
         </div>
       </div>
+
+      {rescanMessage && (
+        <p className="field-help" style={{ marginTop: -12, marginBottom: 16 }}>
+          {rescanMessage}
+        </p>
+      )}
 
       <div className="dashboard-grid">
         <div>

@@ -1,6 +1,6 @@
 import { Client, Vehicle } from "@prisma/client";
 import { prisma } from "./prisma";
-import { fetchNewMessages, IngestMessage } from "./imapClient";
+import { fetchNewMessages, fetchRecentMessages, IngestMessage } from "./imapClient";
 import { classifyAttachment } from "./emailClassifier";
 import { fileDocument, saveUploadedFile } from "./documentFiling";
 import { loadImapConfig } from "./emailAccountConfig";
@@ -102,38 +102,58 @@ export async function processMessage(
   };
 }
 
-// Scans one connected mailbox for messages arrived since the last sync,
-// matches each to a client by sender domain, classifies any attachments
-// with Claude, and files whatever looks like a real compliance document —
-// immediately, with no review step, per the user's explicit choice. Every
-// message gets one EmailIngestLog row regardless of outcome, so filing is
-// never a silent guess even though it isn't gated.
-export async function syncAccount(accountId: string): Promise<void> {
-  const account = await prisma.emailAccount.findUnique({ where: { id: accountId } });
-  if (!account) return;
+export interface IngestSummary {
+  scanned: number;
+  filed: number;
+  skippedNoClient: number;
+  skippedNotDocument: number;
+  alreadyFiled: number;
+  errors: number;
+}
 
-  const { config } = await loadImapConfig(accountId);
+function emptySummary(): IngestSummary {
+  return { scanned: 0, filed: 0, skippedNoClient: 0, skippedNotDocument: 0, alreadyFiled: 0, errors: 0 };
+}
 
-  let messages: IngestMessage[];
-  try {
-    messages = await fetchNewMessages(config, account.lastProcessedUid);
-  } catch (err) {
-    console.error(`[email-ingest] fetch failed for account ${accountId}:`, err);
-    await prisma.emailAccount.update({
-      where: { id: accountId },
-      data: {
-        connectionStatus: "ERROR",
-        connectionError: err instanceof Error ? err.message : "Fetch failed",
-      },
-    });
-    return;
-  }
+function mergeSummary(into: IngestSummary, from: IngestSummary): void {
+  into.scanned += from.scanned;
+  into.filed += from.filed;
+  into.skippedNoClient += from.skippedNoClient;
+  into.skippedNotDocument += from.skippedNotDocument;
+  into.alreadyFiled += from.alreadyFiled;
+  into.errors += from.errors;
+}
+
+// The incremental poll and a user-triggered rescan can legitimately overlap
+// the same messages (rescan explicitly ignores lastProcessedUid). Without
+// this, both classify and file the same attachment again — real duplicate
+// Document rows, not just wasted Claude calls.
+async function alreadyFiled(accountId: string, messageUid: number): Promise<boolean> {
+  const existing = await prisma.emailIngestLog.findFirst({
+    where: { emailAccountId: accountId, messageUid, status: "FILED" },
+    select: { id: true },
+  });
+  return existing !== null;
+}
+
+// Processes a fixed batch of already-fetched messages: match → classify →
+// file, one EmailIngestLog row per message regardless of outcome. Shared by
+// the incremental poll and the user-triggered rescan — they differ only in
+// which messages they hand in and whether the cursor advances afterward.
+async function ingestMessages(accountId: string, messages: IngestMessage[]): Promise<IngestSummary> {
+  const summary = emptySummary();
 
   for (const message of messages) {
+    summary.scanned++;
     const fromAddress = message.parsed.from?.value?.[0]?.address ?? message.from;
     try {
+      if (await alreadyFiled(accountId, message.uid)) {
+        summary.alreadyFiled++;
+        continue;
+      }
       const client = await matchClientByDomain(fromAddress);
       if (!client) {
+        summary.skippedNoClient++;
         await prisma.emailIngestLog.create({
           data: {
             emailAccountId: accountId,
@@ -144,22 +164,26 @@ export async function syncAccount(accountId: string): Promise<void> {
             summary: `No client's contact domain matches "${fromAddress}".`,
           },
         });
-      } else {
-        const vehicles = await prisma.vehicle.findMany({ where: { clientId: client.id } });
-        const result = await processMessage(accountId, message, client, vehicles);
-        await prisma.emailIngestLog.create({
-          data: {
-            emailAccountId: accountId,
-            messageUid: message.uid,
-            subject: message.subject,
-            fromAddress,
-            clientId: client.id,
-            status: result.status,
-            summary: result.summary,
-          },
-        });
+        continue;
       }
+
+      const vehicles = await prisma.vehicle.findMany({ where: { clientId: client.id } });
+      const result = await processMessage(accountId, message, client, vehicles);
+      if (result.status === "FILED") summary.filed++;
+      else summary.skippedNotDocument++;
+      await prisma.emailIngestLog.create({
+        data: {
+          emailAccountId: accountId,
+          messageUid: message.uid,
+          subject: message.subject,
+          fromAddress,
+          clientId: client.id,
+          status: result.status,
+          summary: result.summary,
+        },
+      });
     } catch (err) {
+      summary.errors++;
       console.error(`[email-ingest] message ${message.uid} failed:`, err);
       await prisma.emailIngestLog.create({
         data: {
@@ -172,17 +196,120 @@ export async function syncAccount(accountId: string): Promise<void> {
         },
       });
     }
+  }
 
-    // Advance after each message (not just at the end) so a later crash
-    // doesn't reprocess messages already handled.
+  return summary;
+}
+
+// The periodic poll and a user-triggered rescan can otherwise fire for the
+// same account at once — two IMAP sessions racing on one mailbox, which is
+// what produced a hard "Connection not available" failure in practice, on
+// top of the duplicate-filing risk alreadyFiled() only half-covers (it
+// can't see an in-flight, not-yet-logged classification from the other run).
+const accountsInProgress = new Set<string>();
+
+async function withAccountLock<T>(accountId: string, fn: () => Promise<T>): Promise<T | undefined> {
+  if (accountsInProgress.has(accountId)) {
+    console.log(`[email-ingest] skipping — account ${accountId} already has a sync in progress`);
+    return undefined;
+  }
+  accountsInProgress.add(accountId);
+  try {
+    return await fn();
+  } finally {
+    accountsInProgress.delete(accountId);
+  }
+}
+
+// Scans one connected mailbox for messages arrived since the last sync,
+// matches each to a client by sender domain, classifies any attachments
+// with Claude, and files whatever looks like a real compliance document —
+// immediately, with no review step, per the user's explicit choice.
+export async function syncAccount(accountId: string): Promise<IngestSummary | void> {
+  return withAccountLock(accountId, () => doSyncAccount(accountId));
+}
+
+// Persists progress after every batch (not just at the end) so a mid-scan
+// connection drop only loses the batch in flight — a later sync/rescan
+// resumes from lastProcessedUid rather than starting over or losing what
+// already got filed.
+async function makeBatchHandler(
+  accountId: string,
+  summary: IngestSummary,
+  getCursor: () => number
+): Promise<(messages: IngestMessage[]) => Promise<void>> {
+  let cursor = getCursor();
+  return async (messages: IngestMessage[]) => {
+    const batchSummary = await ingestMessages(accountId, messages);
+    mergeSummary(summary, batchSummary);
+    if (messages.length > 0) {
+      cursor = Math.max(cursor, ...messages.map((m) => m.uid));
+      await prisma.emailAccount.update({ where: { id: accountId }, data: { lastProcessedUid: cursor } });
+    }
+  };
+}
+
+async function doSyncAccount(accountId: string): Promise<IngestSummary | void> {
+  const account = await prisma.emailAccount.findUnique({ where: { id: accountId } });
+  if (!account) return;
+
+  const { config } = await loadImapConfig(accountId);
+  const summary = emptySummary();
+
+  try {
+    const onBatch = await makeBatchHandler(accountId, summary, () => account.lastProcessedUid ?? 0);
+    await fetchNewMessages(config, account.lastProcessedUid, onBatch);
     await prisma.emailAccount.update({
       where: { id: accountId },
-      data: { lastProcessedUid: message.uid },
+      data: { connectionStatus: "CONNECTED", connectionError: null, lastSyncedAt: new Date() },
+    });
+  } catch (err) {
+    console.error(`[email-ingest] sync failed for account ${accountId}:`, err);
+    await prisma.emailAccount.update({
+      where: { id: accountId },
+      data: {
+        connectionStatus: "ERROR",
+        connectionError: err instanceof Error ? err.message : "Fetch failed",
+      },
     });
   }
 
-  await prisma.emailAccount.update({
-    where: { id: accountId },
-    data: { connectionStatus: "CONNECTED", connectionError: null, lastSyncedAt: new Date() },
-  });
+  return summary;
+}
+
+// User-triggered: re-scans the most recent `limit` messages regardless of
+// what's already been processed, for when something should have been
+// filed and wasn't. Advances lastProcessedUid forward if this reaches
+// further than the incremental sync had (never backward, so a later poll
+// can't re-trigger on messages the rescan already covered).
+export async function rescanAccount(accountId: string, limit = 100): Promise<IngestSummary> {
+  const result = await withAccountLock(accountId, () => doRescanAccount(accountId, limit));
+  if (!result) {
+    throw new Error("A sync for this account is already in progress — try again shortly.");
+  }
+  return result;
+}
+
+async function doRescanAccount(accountId: string, limit: number): Promise<IngestSummary> {
+  const account = await prisma.emailAccount.findUniqueOrThrow({ where: { id: accountId } });
+  const { config } = await loadImapConfig(accountId);
+  const summary = emptySummary();
+
+  try {
+    const onBatch = await makeBatchHandler(accountId, summary, () => account.lastProcessedUid ?? 0);
+    await fetchRecentMessages(config, limit, onBatch);
+    await prisma.emailAccount.update({
+      where: { id: accountId },
+      data: { connectionStatus: "CONNECTED", connectionError: null, lastSyncedAt: new Date() },
+    });
+  } catch (err) {
+    console.error(`[email-ingest] rescan failed for account ${accountId}:`, err);
+    await prisma.emailAccount.update({
+      where: { id: accountId },
+      data: { connectionStatus: "ERROR", connectionError: err instanceof Error ? err.message : "Fetch failed" },
+    });
+    throw err;
+  }
+
+  return summary;
 }

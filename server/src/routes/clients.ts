@@ -9,7 +9,7 @@ import { syncTodosForClient } from "../lib/todoSync";
 const router = Router();
 
 const clientInput = z.object({
-  companyName: z.string().min(1),
+  companyName: z.string().trim().min(1),
   companyNumber: z.string().trim().min(1).optional().nullable(),
   vatNumber: z.string().trim().min(1).optional().nullable(),
   olNumber: z.string().trim().min(1).optional().nullable(),
