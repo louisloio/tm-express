@@ -412,3 +412,68 @@ h2 {
   gap: 8px;
   margin-top: 20px;
 }
+
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.todo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.todo-item-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.todo-type {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--red-bg);
+  color: var(--danger);
+  white-space: nowrap;
+}
+
+.todo-type-ocrs_movement {
+  background: var(--amber-bg);
+  color: var(--amber);
+}
+
+.todo-description {
+  font-weight: 500;
+}
+
+.todo-client-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.todo-client-link:hover {
+  text-decoration: underline;
+}
+
+.todo-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}

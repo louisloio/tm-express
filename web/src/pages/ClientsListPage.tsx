@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { api, Client } from "../lib/api";
 import { ClientForm } from "../components/ClientForm";
 import { Modal } from "../components/Modal";
+import { TodoList } from "../components/TodoList";
+import { computeClientTodos, TodoItem } from "../lib/todos";
 
 const statusLabel: Record<Client["onboardingStatus"], string> = {
   PENDING_DVLA: "Pending DVLA",
@@ -11,12 +13,26 @@ const statusLabel: Record<Client["onboardingStatus"], string> = {
 
 export function ClientsListPage() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [clientNameById, setClientNameById] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
 
   async function load() {
     setLoading(true);
-    setClients(await api.listClients());
+    const list = await api.listClients();
+    setClients(list);
+    setClientNameById(Object.fromEntries(list.map((c) => [c.id, c.companyName])));
+
+    // All-clients todo view (spec section 8): computed per client from its
+    // own vehicles/drivers/OCRS history, same as the per-client view.
+    const perClientTodos = await Promise.all(
+      list.map(async (c) => {
+        const [detail, ocrsScores] = await Promise.all([api.getClient(c.id), api.listOcrsScores(c.id)]);
+        return computeClientTodos(detail, detail.vehicles, detail.drivers, ocrsScores);
+      })
+    );
+    setTodos(perClientTodos.flat());
     setLoading(false);
   }
 
@@ -68,6 +84,13 @@ export function ClientsListPage() {
             ))}
           </tbody>
         </table>
+      )}
+
+      {!loading && (
+        <section className="card" style={{ marginTop: 20 }}>
+          <h2>Todo ({todos.length})</h2>
+          <TodoList todos={todos} showClient clientNameById={clientNameById} />
+        </section>
       )}
 
       {showAdd && (

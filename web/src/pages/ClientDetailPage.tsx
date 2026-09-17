@@ -8,6 +8,8 @@ import { OcrsScoreForm } from "../components/OcrsScoreForm";
 import { Modal } from "../components/Modal";
 import { formatDate, isOverdue } from "../lib/dates";
 import { bandLabel, compareToPrevious } from "../lib/ocrs";
+import { computeClientTodos } from "../lib/todos";
+import { TodoList } from "../components/TodoList";
 
 type VehicleModal = { mode: "add" } | { mode: "edit"; vehicle: Vehicle } | null;
 type DriverModal = { mode: "add" } | { mode: "edit"; driver: Driver } | null;
@@ -136,6 +138,11 @@ export function ClientDetailPage() {
             <dd>{client.operatingCentreAddress ?? "—"}</dd>
           </div>
         </dl>
+      </section>
+
+      <section className="card">
+        <h2>Todo ({computeClientTodos(client, client.vehicles, client.drivers, ocrsScores).length})</h2>
+        <TodoList todos={computeClientTodos(client, client.vehicles, client.drivers, ocrsScores)} />
       </section>
 
       <section className="card">
