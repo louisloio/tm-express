@@ -7,6 +7,7 @@ export type Client = {
   ol_number: string | null
   address: string | null
   operating_centre: string | null
+  transport_manager: string | null
   onboarding_status: OnboardingStatus
   created_at: string
   archived_at: string | null

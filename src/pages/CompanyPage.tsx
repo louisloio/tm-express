@@ -290,6 +290,12 @@ export function CompanyPage() {
             <span className="text-[14px] font-medium text-text-primary">{vehicles.length}</span>
           </div>
           <div className="col-span-2 flex flex-col gap-1">
+            <span className="text-[14px] font-medium text-text-secondary">Transport manager</span>
+            <span className="text-[14px] font-medium text-text-primary">
+              {client.transport_manager ?? '—'}
+            </span>
+          </div>
+          <div className="col-span-2 flex flex-col gap-1">
             <span className="text-[14px] font-medium text-text-secondary">Operating centre</span>
             <span className="text-[14px] font-medium text-text-primary">
               {client.operating_centre ?? '—'}
