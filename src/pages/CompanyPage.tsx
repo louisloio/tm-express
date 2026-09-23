@@ -13,7 +13,6 @@ import { VehicleRow } from '../components/company/VehicleRow'
 import { EditClientDialog } from '../components/EditClientDialog'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
-import { InlineLabel } from '../components/InlineLabel'
 import { OnboardingBadge } from '../components/OnboardingBadge'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
@@ -260,7 +259,12 @@ export function CompanyPage() {
       <div className="mx-auto w-full max-w-[600px] flex-1">
         {/* CompanyDetails */}
         <div className="grid grid-cols-2 gap-4 px-6 py-4">
-          <InlineLabel label="OL number" value={client.ol_number ?? '—'} />
+          <div className="flex flex-col gap-1">
+            <span className="text-[14px] font-medium text-text-secondary">OL number</span>
+            <span className="text-[14px] font-medium text-text-primary">
+              {client.ol_number ?? '—'}
+            </span>
+          </div>
           <div className="flex flex-col gap-1">
             <span className="text-[14px] font-medium text-text-secondary">Contact(s)</span>
             {contacts.length > 0 ? (
@@ -281,7 +285,10 @@ export function CompanyPage() {
             <span className="text-[14px] font-medium text-text-secondary">Onboarding status</span>
             <OnboardingBadge status={client.onboarding_status} />
           </div>
-          <InlineLabel label="Vehicles" value={String(vehicles.length)} />
+          <div className="flex flex-col gap-1">
+            <span className="text-[14px] font-medium text-text-secondary">Vehicles</span>
+            <span className="text-[14px] font-medium text-text-primary">{vehicles.length}</span>
+          </div>
           <div className="col-span-2 flex flex-col gap-1">
             <span className="text-[14px] font-medium text-text-secondary">Operating centre</span>
             <span className="text-[14px] font-medium text-text-primary">
