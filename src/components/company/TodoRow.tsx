@@ -15,10 +15,13 @@ export function TodoRow({ todo, href, clientName, onChase }: TodoRowProps) {
 
   const badge =
     todo.source_type === 'infringement'
-      ? 'Infringement'
+      ? { label: 'Infringement', className: 'border-border-subtle bg-bg-white text-text-primary' }
       : todo.description.includes('overdue')
-        ? 'Overdue Document'
-        : 'Missing Document'
+        ? { label: 'Overdue Document', className: 'border-transparent bg-danger-bg text-danger-text' }
+        : {
+            label: 'Approaching Due Date',
+            className: 'border-transparent bg-warning-bg text-warning-text',
+          }
 
   function stop(e: React.MouseEvent) {
     e.preventDefault()
@@ -44,8 +47,8 @@ export function TodoRow({ todo, href, clientName, onChase }: TodoRowProps) {
       className="flex items-center gap-8 border-t border-border-divider bg-bg-row px-6 py-3"
     >
       <div className="flex flex-1 flex-col gap-1">
-        <span className="w-fit rounded border border-border-subtle bg-bg-white px-1 py-0.5 text-[12px] font-medium text-text-primary">
-          {badge}
+        <span className={`w-fit rounded border px-1 py-0.5 text-[12px] font-medium ${badge.className}`}>
+          {badge.label}
         </span>
         <span className="text-[14px] font-semibold text-text-primary">{todo.description}</span>
         {clientName && <span className="text-[14px] text-text-secondary">{clientName}</span>}

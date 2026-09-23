@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { InlineLabel } from '../InlineLabel'
-import { formatDate, isOverdue } from '../../lib/format'
+import { formatDate, getDocStatus } from '../../lib/format'
 import type { DocType, Document, Vehicle } from '../../types/database'
 
 const DOC_TYPES: { type: DocType; label: string }[] = [
@@ -33,12 +33,13 @@ export function VehicleRow({ clientId, vehicle, docsByType }: VehicleRowProps) {
         <div className="flex flex-col gap-1">
           {DOC_TYPES.map(({ type, label }) => {
             const doc = docsByType.get(type)
+            const status = getDocStatus(doc?.expiry_date, doc?.reminder_days_before)
             return (
               <InlineLabel
                 key={type}
                 label={label}
                 value={doc?.expiry_date ? formatDate(doc.expiry_date) : 'Not on file'}
-                danger={isOverdue(doc?.expiry_date)}
+                tone={status === 'ok' ? undefined : status}
               />
             )
           })}

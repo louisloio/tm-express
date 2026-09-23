@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { InlineLabel } from '../InlineLabel'
-import { formatDate, isOverdue } from '../../lib/format'
+import { formatDate, getDocStatus } from '../../lib/format'
 import type { DocType, Document, Driver } from '../../types/database'
 
 interface DriverRowProps {
@@ -13,6 +13,8 @@ interface DriverRowProps {
 export function DriverRow({ clientId, driver, docsByType, infringementCount }: DriverRowProps) {
   const licence = docsByType.get('Licence check')
   const cpc = docsByType.get('CPC')
+  const licenceStatus = getDocStatus(licence?.expiry_date, licence?.reminder_days_before)
+  const cpcStatus = getDocStatus(cpc?.expiry_date, cpc?.reminder_days_before)
 
   return (
     <Link
@@ -28,12 +30,12 @@ export function DriverRow({ clientId, driver, docsByType, infringementCount }: D
           <InlineLabel
             label="Licence check due"
             value={licence?.expiry_date ? formatDate(licence.expiry_date) : 'Not on file'}
-            danger={isOverdue(licence?.expiry_date)}
+            tone={licenceStatus === 'ok' ? undefined : licenceStatus}
           />
           <InlineLabel
             label="CPC due"
             value={cpc?.expiry_date ? formatDate(cpc.expiry_date) : 'Not on file'}
-            danger={isOverdue(cpc?.expiry_date)}
+            tone={cpcStatus === 'ok' ? undefined : cpcStatus}
           />
           <InlineLabel label="Infringements" value={String(infringementCount)} />
         </div>

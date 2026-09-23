@@ -90,7 +90,7 @@ export function InfringementPage() {
           <InlineLabel
             label="Status"
             value={infringement.resolved ? 'Resolved' : 'Open'}
-            danger={!infringement.resolved}
+            tone={infringement.resolved ? undefined : 'overdue'}
           />
           {driver && <InlineLabel label="Driver" value={driver.name} />}
           {vehicle && <InlineLabel label="Vehicle" value={vehicle.registration} />}

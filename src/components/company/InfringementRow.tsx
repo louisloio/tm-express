@@ -28,7 +28,7 @@ export function InfringementRow({ clientId, infringement, linkedTo }: Infringeme
           <InlineLabel
             label="Status"
             value={infringement.resolved ? 'Resolved' : 'Open'}
-            danger={!infringement.resolved}
+            tone={infringement.resolved ? undefined : 'overdue'}
           />
           <InlineLabel label="Linked to" value={linkedTo} />
           <InlineLabel label="Date" value={formatDate(infringement.date)} />
