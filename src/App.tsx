@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ForgotPassword } from './pages/ForgotPassword'
 import { Home } from './pages/Home'
+import { ResetPassword } from './pages/ResetPassword'
 import { SignIn } from './pages/SignIn'
 import { SignUp } from './pages/SignUp'
 
@@ -31,6 +33,15 @@ function AppRoutes() {
           </AuthRedirect>
         }
       />
+      <Route
+        path="/forgot-password"
+        element={
+          <AuthRedirect>
+            <ForgotPassword />
+          </AuthRedirect>
+        }
+      />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/"
         element={

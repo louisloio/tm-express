@@ -59,9 +59,16 @@ export function SignIn() {
           </div>
         </div>
 
+        <Link
+          to="/forgot-password"
+          className="self-end pt-3 text-[14px] font-medium text-[#0060e3]"
+        >
+          Forgot password?
+        </Link>
+
         {error && <p className="mt-4 text-[14px] text-danger-text">{error}</p>}
 
-        <div className="flex flex-col gap-[10px] pt-12">
+        <div className="flex flex-col gap-[10px] pt-8">
           <button
             type="submit"
             disabled={submitting}
