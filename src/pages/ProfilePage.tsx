@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
@@ -10,13 +10,29 @@ export function ProfilePage() {
   const { user, profile, signOut, refreshProfile } = useAuth()
   const navigate = useNavigate()
 
-  const [firstName, setFirstName] = useState(profile?.first_name ?? '')
-  const [lastName, setLastName] = useState(profile?.last_name ?? '')
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? null)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [initialized, setInitialized] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+
+  // `profile` loads asynchronously after this page mounts (e.g. a direct
+  // load/refresh of /profile, not just an in-app nav from an already-warm
+  // session) — seeding state from it in useState's initializer would lock in
+  // '' forever if profile wasn't ready yet. Sync once, the first time it
+  // becomes available, so a later refreshProfile() after Save doesn't clobber
+  // whatever the user might be mid-editing.
+  useEffect(() => {
+    if (profile && !initialized) {
+      setFirstName(profile.first_name ?? '')
+      setLastName(profile.last_name ?? '')
+      setAvatarUrl(profile.avatar_url)
+      setInitialized(true)
+    }
+  }, [profile, initialized])
 
   if (!user) return null
 
