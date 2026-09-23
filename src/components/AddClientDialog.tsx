@@ -17,6 +17,7 @@ export function AddClientDialog({ onClose, onCreated }: AddClientDialogProps) {
   const [olNumber, setOlNumber] = useState('')
   const [address, setAddress] = useState('')
   const [operatingCentre, setOperatingCentre] = useState('')
+  const [transportManager, setTransportManager] = useState('')
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -56,6 +57,13 @@ export function AddClientDialog({ onClose, onCreated }: AddClientDialogProps) {
     setOlNumber(op.licence_number)
     setAddress(op.correspondence_address ?? '')
     setOperatingCentre(op.oc_address ?? '')
+    // The register uses "No Transport Manager" as a literal placeholder for
+    // operators without one on file — don't autofill that as if it were a name.
+    setTransportManager(
+      op.transport_manager && op.transport_manager !== 'No Transport Manager'
+        ? op.transport_manager
+        : '',
+    )
   }
 
   function clearSelection() {
@@ -65,6 +73,7 @@ export function AddClientDialog({ onClose, onCreated }: AddClientDialogProps) {
     setOlNumber('')
     setAddress('')
     setOperatingCentre('')
+    setTransportManager('')
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -82,6 +91,7 @@ export function AddClientDialog({ onClose, onCreated }: AddClientDialogProps) {
       ol_number: olNumber.trim() || null,
       address: address.trim() || null,
       operating_centre: operatingCentre.trim() || null,
+      transport_manager: transportManager.trim() || null,
     })
     setSubmitting(false)
 
@@ -207,6 +217,19 @@ export function AddClientDialog({ onClose, onCreated }: AddClientDialogProps) {
               type="text"
               value={operatingCentre}
               onChange={(e) => setOperatingCentre(e.target.value)}
+              placeholder="Optional"
+              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
+              Transport manager
+            </label>
+            <input
+              type="text"
+              value={transportManager}
+              onChange={(e) => setTransportManager(e.target.value)}
               placeholder="Optional"
               className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
             />
