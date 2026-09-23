@@ -8,6 +8,21 @@ export type Profile = {
   updated_at: string
 }
 
+export type Mailbox = {
+  id: string
+  user_id: string
+  email: string
+  label: string | null
+  smtp_host: string
+  smtp_port: number
+  smtp_secure: boolean
+  smtp_username: string
+  is_default: boolean
+  verified_at: string | null
+  created_at: string
+  archived_at: string | null
+}
+
 export type Client = {
   id: string
   user_id: string
@@ -132,6 +147,7 @@ export type EmailChase = {
   recipients: string[]
   subject: string
   body: string
+  from_email: string | null
   sent_at: string
 }
 
@@ -228,6 +244,13 @@ export interface Database {
         Row: Profile
         Insert: Partial<Profile> & Pick<Profile, 'id'>
         Update: Partial<Profile>
+        Relationships: []
+      }
+      mailboxes: {
+        Row: Mailbox
+        Insert: Partial<Mailbox> &
+          Pick<Mailbox, 'user_id' | 'email' | 'smtp_host' | 'smtp_port' | 'smtp_username'>
+        Update: Partial<Mailbox>
         Relationships: []
       }
     }

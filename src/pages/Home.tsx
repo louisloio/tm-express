@@ -5,14 +5,15 @@ import plusIcon from '../assets/icon-plus.svg'
 import { AddClientDialog } from '../components/AddClientDialog'
 import { TodoRow } from '../components/company/TodoRow'
 import { EditClientDialog } from '../components/EditClientDialog'
+import { EmailChaseModal } from '../components/EmailChaseModal'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { OnboardingBadge } from '../components/OnboardingBadge'
 import { RowMenu } from '../components/RowMenu'
 import { archiveRow } from '../lib/archive'
 import { supabase } from '../lib/supabase'
-import { chaseTodo, fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
-import type { Client, Todo } from '../types/database'
+import { fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
+import type { Client, ClientContact, Todo } from '../types/database'
 
 type Tab = 'dashboard' | 'todo'
 
@@ -26,6 +27,9 @@ export function Home() {
   const [todoWarning, setTodoWarning] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [chaseTarget, setChaseTarget] = useState<{ todo: Todo; contacts: ClientContact[] } | null>(
+    null,
+  )
 
   const loadClients = useCallback(async () => {
     const { data, error } = await supabase
@@ -73,18 +77,12 @@ export function Home() {
 
   const clientNameById = new Map(clients.map((c) => [c.id, c.company_name]))
 
-  async function handleChase(todo: Todo) {
-    const { data: contacts } = await supabase
+  async function handleOpenChase(todo: Todo) {
+    const { data } = await supabase
       .from('client_contacts')
       .select('*')
       .eq('client_id', todo.client_id)
-    const recipients = (contacts ?? []).map((c) => c.email)
-    if (recipients.length === 0) {
-      window.alert('Add a client contact first — there’s no email to chase.')
-      return
-    }
-    await chaseTodo(todo, recipients)
-    void loadTodos()
+    setChaseTarget({ todo, contacts: data ?? [] })
   }
 
   async function handleArchiveClient(id: string) {
@@ -182,7 +180,7 @@ export function Home() {
                   todo={todo}
                   href={todoTargets.get(todo.id)?.href ?? `/clients/${todo.client_id}`}
                   clientName={clientNameById.get(todo.client_id)}
-                  onChase={handleChase}
+                  onOpenChase={handleOpenChase}
                 />
               ))
             )}
@@ -208,6 +206,20 @@ export function Home() {
           onSaved={() => {
             setEditingClient(null)
             void loadClients()
+          }}
+        />
+      )}
+      {chaseTarget && (
+        <EmailChaseModal
+          clientId={chaseTarget.todo.client_id}
+          clientName={clientNameById.get(chaseTarget.todo.client_id) ?? 'the client'}
+          contacts={chaseTarget.contacts}
+          scope="single_todo"
+          todo={chaseTarget.todo}
+          onClose={() => setChaseTarget(null)}
+          onSent={() => {
+            setChaseTarget(null)
+            void loadTodos()
           }}
         />
       )}

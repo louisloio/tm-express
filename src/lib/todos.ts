@@ -56,22 +56,3 @@ export function resolveTodoTargets(todos: Todo[]): Map<string, TodoTarget> {
 
   return targets
 }
-
-/**
- * Records a chase for a single todo. This logs the chase (matching the
- * EmailChase data model) and starts the 3-day cooling period via the
- * `email_chases_apply_cooling` DB trigger — it doesn't actually send an
- * email yet (no outbound email provider wired up), so treat it as
- * "mark as chased" for now rather than a real send.
- */
-export async function chaseTodo(todo: Todo, recipients: string[]): Promise<void> {
-  const { error } = await supabase.from('email_chases').insert({
-    client_id: todo.client_id,
-    scope: 'single_todo',
-    todo_id: todo.id,
-    recipients,
-    subject: `[TM Express] Action needed: ${todo.description}`,
-    body: `Hi,\n\nThis is a reminder regarding: ${todo.description}.\n\nPlease action this as soon as possible.\n\nThanks,\nTM Express`,
-  })
-  if (error) throw error
-}

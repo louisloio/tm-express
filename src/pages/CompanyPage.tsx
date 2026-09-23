@@ -11,6 +11,7 @@ import { LastVisitRow } from '../components/company/LastVisitRow'
 import { TodoRow } from '../components/company/TodoRow'
 import { VehicleRow } from '../components/company/VehicleRow'
 import { EditClientDialog } from '../components/EditClientDialog'
+import { EmailChaseModal } from '../components/EmailChaseModal'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { OnboardingBadge } from '../components/OnboardingBadge'
@@ -19,7 +20,7 @@ import { TopSubPage } from '../components/TopSubPage'
 import { archiveRow } from '../lib/archive'
 import { latestDocsByParent } from '../lib/documents'
 import { supabase } from '../lib/supabase'
-import { chaseTodo, fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
+import { fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
 import type {
   Client,
   ClientContact,
@@ -49,6 +50,8 @@ type DialogState =
   | { type: 'driver'; driver?: Driver }
   | { type: 'visit'; visit?: Visit }
   | { type: 'infringement'; infringement?: Infringement }
+  | { type: 'chase-single'; todo: Todo }
+  | { type: 'chase-all' }
   | null
 
 export function CompanyPage() {
@@ -152,17 +155,6 @@ export function CompanyPage() {
     void load()
   }, [load])
 
-  async function handleChase(todo: Todo) {
-    if (!data) return
-    const recipients = data.contacts.map((c) => c.email)
-    if (recipients.length === 0) {
-      window.alert('Add a client contact first — there’s no email to chase.')
-      return
-    }
-    await chaseTodo(todo, recipients)
-    void load()
-  }
-
   async function handleArchiveClient() {
     if (!clientId) return
     await archiveRow('clients', clientId)
@@ -222,6 +214,7 @@ export function CompanyPage() {
 
   const vehicleDocs = latestDocsByParent(documents.filter((d) => d.parent_type === 'vehicle'))
   const driverDocs = latestDocsByParent(documents.filter((d) => d.parent_type === 'driver'))
+  const documentTodos = todos.filter((t) => t.source_type === 'document')
 
   const vehiclesById = new Map(vehicles.map((v) => [v.id, v]))
   const driversById = new Map(drivers.map((d) => [d.id, d]))
@@ -259,6 +252,11 @@ export function CompanyPage() {
         onEdit={() => setDialog({ type: 'client-edit' })}
         onArchive={handleArchiveClient}
         archiveLabel="Archive client"
+        extraAction={
+          documentTodos.length > 0
+            ? { label: 'Chase all outstanding', onClick: () => setDialog({ type: 'chase-all' }) }
+            : undefined
+        }
       />
 
       <div className="mx-auto w-full max-w-[600px] flex-1">
@@ -319,7 +317,7 @@ export function CompanyPage() {
               key={todo.id}
               todo={todo}
               href={todoTargets.get(todo.id)?.href ?? `/clients/${client.id}`}
-              onChase={handleChase}
+              onOpenChase={(t) => setDialog({ type: 'chase-single', todo: t })}
             />
           ))
         )}
@@ -474,6 +472,34 @@ export function CompanyPage() {
           infringement={dialog.infringement}
           onClose={() => setDialog(null)}
           onCreated={() => {
+            setDialog(null)
+            void load()
+          }}
+        />
+      )}
+      {dialog?.type === 'chase-single' && (
+        <EmailChaseModal
+          clientId={client.id}
+          clientName={client.company_name}
+          contacts={contacts}
+          scope="single_todo"
+          todo={dialog.todo}
+          onClose={() => setDialog(null)}
+          onSent={() => {
+            setDialog(null)
+            void load()
+          }}
+        />
+      )}
+      {dialog?.type === 'chase-all' && (
+        <EmailChaseModal
+          clientId={client.id}
+          clientName={client.company_name}
+          contacts={contacts}
+          scope="all_outstanding"
+          todos={todos}
+          onClose={() => setDialog(null)}
+          onSent={() => {
             setDialog(null)
             void load()
           }}

@@ -3,20 +3,33 @@ import { Link } from 'react-router-dom'
 import backIcon from '../assets/icon-back.svg'
 import moreIcon from '../assets/icon-more.svg'
 
+interface ExtraAction {
+  label: string
+  onClick: () => void
+}
+
 interface TopSubPageProps {
   backTo: string
   title: string
   onEdit?: () => void
   onArchive?: () => Promise<void>
   archiveLabel?: string
+  extraAction?: ExtraAction
 }
 
-export function TopSubPage({ backTo, title, onEdit, onArchive, archiveLabel }: TopSubPageProps) {
+export function TopSubPage({
+  backTo,
+  title,
+  onEdit,
+  onArchive,
+  archiveLabel,
+  extraAction,
+}: TopSubPageProps) {
   const [open, setOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [archiving, setArchiving] = useState(false)
 
-  const hasMenu = !!onEdit || !!onArchive
+  const hasMenu = !!onEdit || !!onArchive || !!extraAction
 
   async function handleArchive() {
     if (!onArchive) return
@@ -77,7 +90,19 @@ export function TopSubPage({ backTo, title, onEdit, onArchive, archiveLabel }: T
             <img src={moreIcon} alt="" className="size-6" />
           </button>
           {open && (
-            <div className="absolute right-0 top-12 z-10 w-36 overflow-hidden rounded-lg border border-border-subtle bg-bg-white shadow-lg">
+            <div className="absolute right-0 top-12 z-10 w-48 overflow-hidden rounded-lg border border-border-subtle bg-bg-white shadow-lg">
+              {extraAction && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    extraAction.onClick()
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-[14px] text-text-primary hover:bg-bg-row"
+                >
+                  {extraAction.label}
+                </button>
+              )}
               {onEdit && (
                 <button
                   type="button"
