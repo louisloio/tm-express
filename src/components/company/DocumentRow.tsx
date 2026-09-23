@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { formatDate, getDocStatus } from '../../lib/format'
+import { supabase } from '../../lib/supabase'
+import { fileNameFromPath, formatDate, formatDateTime, getDocStatus } from '../../lib/format'
 import type { Document } from '../../types/database'
 
 const STATUS_CLASS: Record<string, string> = {
@@ -18,6 +19,7 @@ export function DocumentRow({ doc, parentLabel, onArchive }: DocumentRowProps) {
   const status = getDocStatus(doc.expiry_date, doc.reminder_days_before)
   const [confirming, setConfirming] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const [opening, setOpening] = useState(false)
 
   async function handleArchive() {
     if (!onArchive) return
@@ -30,13 +32,44 @@ export function DocumentRow({ doc, parentLabel, onArchive }: DocumentRowProps) {
     }
   }
 
+  async function handleOpenFile() {
+    if (!doc.file_path || opening) return
+    setOpening(true)
+    const { data, error } = await supabase.storage
+      .from('documents')
+      .createSignedUrl(doc.file_path, 60)
+    setOpening(false)
+    if (error || !data) {
+      window.alert(`Couldn't open file: ${error?.message ?? 'unknown error'}`)
+      return
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <div className="flex items-center gap-8 border-b border-border-divider px-6 py-3">
       <div className="flex flex-1 flex-col gap-1">
-        <span className="w-fit rounded border border-border-subtle bg-bg-white px-1 py-0.5 text-[12px] font-medium text-text-primary">
-          {doc.doc_type}
-        </span>
-        <span className="text-[14px] font-semibold text-text-primary">{parentLabel}</span>
+        <div className="flex items-center gap-1">
+          <span className="w-fit rounded border border-border-subtle bg-bg-white px-1 py-0.5 text-[12px] font-medium text-text-primary">
+            {doc.doc_type}
+          </span>
+          <span className="w-fit rounded border border-border-subtle bg-bg-white px-1 py-0.5 text-[12px] font-medium text-text-primary">
+            {parentLabel}
+          </span>
+        </div>
+        {doc.file_path ? (
+          <button
+            type="button"
+            onClick={handleOpenFile}
+            disabled={opening}
+            className="w-fit text-left text-[14px] font-semibold text-[#0f69e3] underline-offset-2 hover:underline disabled:opacity-60"
+          >
+            {opening ? 'Opening…' : fileNameFromPath(doc.file_path)}
+          </button>
+        ) : (
+          <span className="text-[14px] font-semibold text-text-tertiary">No file uploaded</span>
+        )}
+        <span className="text-[14px] text-text-tertiary">{formatDateTime(doc.uploaded_at)}</span>
         <span className={`text-[14px] ${STATUS_CLASS[status]}`}>
           {doc.expiry_date ? `Expires ${formatDate(doc.expiry_date)}` : 'No expiry set'}
         </span>

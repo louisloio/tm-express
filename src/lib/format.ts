@@ -5,6 +5,26 @@ export function formatDate(value: string | null | undefined): string {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+export function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  const datePart = date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+  const timePart = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return `${datePart} ${timePart}`
+}
+
+/** The original filename, recovered from the `${timestamp}-${filename}` path AddDocumentDialog uploads to. */
+export function fileNameFromPath(path: string | null): string {
+  if (!path) return 'No file uploaded'
+  const last = path.split('/').pop() ?? path
+  return last.replace(/^\d+-/, '')
+}
+
 export type DocStatus = 'overdue' | 'warning' | 'ok'
 
 /**
