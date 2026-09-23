@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { InlineLabel } from '../InlineLabel'
+import { RowMenu } from '../RowMenu'
 import { formatDate } from '../../lib/format'
 import type { Infringement } from '../../types/database'
 
@@ -7,15 +8,23 @@ interface InfringementRowProps {
   clientId: string
   infringement: Infringement
   linkedTo: string
+  onEdit: () => void
+  onArchive: () => Promise<void>
 }
 
-export function InfringementRow({ clientId, infringement, linkedTo }: InfringementRowProps) {
+export function InfringementRow({
+  clientId,
+  infringement,
+  linkedTo,
+  onEdit,
+  onArchive,
+}: InfringementRowProps) {
   return (
-    <Link
-      to={`/clients/${clientId}/infringements/${infringement.id}`}
-      className="flex gap-2 border-t border-border-divider bg-bg-row px-6 py-3"
-    >
-      <div className="flex flex-1 flex-col gap-2">
+    <div className="flex items-start gap-2 border-t border-border-divider bg-bg-row px-6 py-3">
+      <Link
+        to={`/clients/${clientId}/infringements/${infringement.id}`}
+        className="flex flex-1 flex-col gap-2"
+      >
         <div className="flex flex-col gap-1">
           <span className="text-[12px] font-semibold text-text-secondary">
             {infringement.category}
@@ -34,7 +43,8 @@ export function InfringementRow({ clientId, infringement, linkedTo }: Infringeme
           <InlineLabel label="Date" value={formatDate(infringement.date)} />
           <InlineLabel label="Notes" value={infringement.notes || '—'} />
         </div>
-      </div>
-    </Link>
+      </Link>
+      <RowMenu onEdit={onEdit} onArchive={onArchive} archiveLabel="Archive infringement" />
+    </div>
   )
 }

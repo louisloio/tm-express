@@ -4,9 +4,12 @@ import chevronRight from '../assets/icon-chevron-right.svg'
 import plusIcon from '../assets/icon-plus.svg'
 import { AddClientDialog } from '../components/AddClientDialog'
 import { TodoRow } from '../components/company/TodoRow'
+import { EditClientDialog } from '../components/EditClientDialog'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { OnboardingBadge } from '../components/OnboardingBadge'
+import { RowMenu } from '../components/RowMenu'
+import { archiveRow } from '../lib/archive'
 import { supabase } from '../lib/supabase'
 import { chaseTodo, fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
 import type { Client, Todo } from '../types/database'
@@ -22,11 +25,13 @@ export function Home() {
   const [error, setError] = useState<string | null>(null)
   const [todoWarning, setTodoWarning] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingClient, setEditingClient] = useState<Client | null>(null)
 
   const loadClients = useCallback(async () => {
     const { data, error } = await supabase
       .from('clients')
       .select('*')
+      .is('archived_at', null)
       .order('created_at', { ascending: false })
     if (error) throw error
     setClients(data ?? [])
@@ -82,6 +87,11 @@ export function Home() {
     void loadTodos()
   }
 
+  async function handleArchiveClient(id: string) {
+    await archiveRow('clients', id)
+    void loadClients()
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
       <Header />
@@ -130,11 +140,11 @@ export function Home() {
             ) : (
               <ul>
                 {clients.map((client) => (
-                  <li key={client.id}>
-                    <Link
-                      to={`/clients/${client.id}`}
-                      className="flex items-center gap-8 border-t border-border-divider bg-bg-row px-6 py-3"
-                    >
+                  <li
+                    key={client.id}
+                    className="flex items-center gap-4 border-t border-border-divider bg-bg-row px-6 py-3"
+                  >
+                    <Link to={`/clients/${client.id}`} className="flex flex-1 items-center gap-8">
                       <div className="flex flex-1 flex-col text-[14px] font-semibold tracking-[-0.364px]">
                         <span className="text-text-primary">{client.company_name}</span>
                         <span className="font-normal text-text-secondary">
@@ -144,6 +154,11 @@ export function Home() {
                       <OnboardingBadge status={client.onboarding_status} />
                       <img src={chevronRight} alt="" className="size-6 shrink-0" />
                     </Link>
+                    <RowMenu
+                      onEdit={() => setEditingClient(client)}
+                      onArchive={() => handleArchiveClient(client.id)}
+                      archiveLabel="Archive client"
+                    />
                   </li>
                 ))}
               </ul>
@@ -182,6 +197,16 @@ export function Home() {
           onClose={() => setDialogOpen(false)}
           onCreated={() => {
             setDialogOpen(false)
+            void loadClients()
+          }}
+        />
+      )}
+      {editingClient && (
+        <EditClientDialog
+          client={editingClient}
+          onClose={() => setEditingClient(null)}
+          onSaved={() => {
+            setEditingClient(null)
             void loadClients()
           }}
         />

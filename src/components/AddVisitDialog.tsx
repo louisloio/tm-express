@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import type { Visit } from '../types/database'
 
 interface AddVisitDialogProps {
   clientId: string
+  visit?: Visit
   onClose: () => void
   onCreated: () => void
 }
@@ -11,9 +13,10 @@ function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function AddVisitDialog({ clientId, onClose, onCreated }: AddVisitDialogProps) {
-  const [date, setDate] = useState(today())
-  const [notes, setNotes] = useState('')
+export function AddVisitDialog({ clientId, visit, onClose, onCreated }: AddVisitDialogProps) {
+  const isEditing = !!visit
+  const [date, setDate] = useState(visit?.date ?? today())
+  const [notes, setNotes] = useState(visit?.notes ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -21,11 +24,18 @@ export function AddVisitDialog({ clientId, onClose, onCreated }: AddVisitDialogP
     e.preventDefault()
     setSubmitting(true)
     setError(null)
-    const { error } = await supabase.from('visits').insert({
-      client_id: clientId,
-      date,
-      notes: notes.trim() || null,
-    })
+
+    const { error } = isEditing
+      ? await supabase
+          .from('visits')
+          .update({ date, notes: notes.trim() || null })
+          .eq('id', visit.id)
+      : await supabase.from('visits').insert({
+          client_id: clientId,
+          date,
+          notes: notes.trim() || null,
+        })
+
     setSubmitting(false)
     if (error) {
       setError(error.message)
@@ -38,7 +48,9 @@ export function AddVisitDialog({ clientId, onClose, onCreated }: AddVisitDialogP
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
       <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-y-auto rounded-t-2xl bg-bg-white sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-border-divider px-6 py-4">
-          <h2 className="text-[18px] font-semibold text-text-primary">Log a visit</h2>
+          <h2 className="text-[18px] font-semibold text-text-primary">
+            {isEditing ? 'Edit visit' : 'Log a visit'}
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -89,7 +101,7 @@ export function AddVisitDialog({ clientId, onClose, onCreated }: AddVisitDialogP
               disabled={submitting}
               className="btn-primary flex-1 rounded-lg px-6 py-3 text-[15px] font-medium text-white disabled:opacity-60"
             >
-              {submitting ? 'Saving…' : 'Log visit'}
+              {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Log visit'}
             </button>
           </div>
         </form>

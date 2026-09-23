@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { InlineLabel } from '../InlineLabel'
+import { RowMenu } from '../RowMenu'
 import { formatDate, getDocSlotStatus } from '../../lib/format'
 import type { DocType, Document, Driver } from '../../types/database'
 
@@ -8,20 +9,26 @@ interface DriverRowProps {
   driver: Driver
   docsByType: Map<DocType, Document>
   infringementCount: number
+  onEdit: () => void
+  onArchive: () => Promise<void>
 }
 
-export function DriverRow({ clientId, driver, docsByType, infringementCount }: DriverRowProps) {
+export function DriverRow({
+  clientId,
+  driver,
+  docsByType,
+  infringementCount,
+  onEdit,
+  onArchive,
+}: DriverRowProps) {
   const licence = docsByType.get('Licence check')
   const cpc = docsByType.get('CPC')
   const licenceStatus = getDocSlotStatus(licence)
   const cpcStatus = getDocSlotStatus(cpc)
 
   return (
-    <Link
-      to={`/clients/${clientId}/drivers/${driver.id}`}
-      className="flex gap-2 border-t border-border-divider bg-bg-row px-6 py-3"
-    >
-      <div className="flex flex-1 flex-col gap-2">
+    <div className="flex items-start gap-2 border-t border-border-divider bg-bg-row px-6 py-3">
+      <Link to={`/clients/${clientId}/drivers/${driver.id}`} className="flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-1">
           <span className="text-[12px] font-semibold text-text-secondary">Name</span>
           <span className="text-[16px] font-semibold text-text-primary">{driver.name}</span>
@@ -39,7 +46,8 @@ export function DriverRow({ clientId, driver, docsByType, infringementCount }: D
           />
           <InlineLabel label="Infringements" value={String(infringementCount)} />
         </div>
-      </div>
-    </Link>
+      </Link>
+      <RowMenu onEdit={onEdit} onArchive={onArchive} archiveLabel="Archive driver" />
+    </div>
   )
 }

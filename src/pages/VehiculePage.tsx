@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { AddDocumentDialog } from '../components/AddDocumentDialog'
+import { AddVehicleDialog } from '../components/AddVehicleDialog'
 import { DocumentRow } from '../components/company/DocumentRow'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { InlineLabel } from '../components/InlineLabel'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
+import { archiveRow } from '../lib/archive'
 import { formatDate, getDocSlotStatus } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import type { Document, Vehicle } from '../types/database'
@@ -15,21 +17,24 @@ const DOC_TYPES = ['PMI', 'Brake test', 'MOT', 'VED', 'Insurance'] as const
 
 export function VehiculePage() {
   const { clientId, vehicleId } = useParams<{ clientId: string; vehicleId: string }>()
+  const navigate = useNavigate()
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [uploadOpen, setUploadOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!vehicleId) return
     const [vehicleRes, documentsRes] = await Promise.all([
-      supabase.from('vehicles').select('*').eq('id', vehicleId).single(),
+      supabase.from('vehicles').select('*').eq('id', vehicleId).is('archived_at', null).single(),
       supabase
         .from('documents')
         .select('*')
         .eq('parent_type', 'vehicle')
         .eq('parent_id', vehicleId)
+        .is('archived_at', null)
         .order('uploaded_at', { ascending: false }),
     ])
     if (vehicleRes.error || !vehicleRes.data) {
@@ -47,6 +52,17 @@ export function VehiculePage() {
   }, [load])
 
   const backTo = clientId ? `/clients/${clientId}` : '/'
+
+  async function handleArchiveVehicle() {
+    if (!vehicleId) return
+    await archiveRow('vehicles', vehicleId)
+    navigate(backTo)
+  }
+
+  async function handleArchiveDocument(id: string) {
+    await archiveRow('documents', id)
+    void load()
+  }
 
   if (loading) {
     return (
@@ -77,7 +93,13 @@ export function VehiculePage() {
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
       <Header />
-      <TopSubPage backTo={backTo} title={vehicle.registration} />
+      <TopSubPage
+        backTo={backTo}
+        title={vehicle.registration}
+        onEdit={() => setEditOpen(true)}
+        onArchive={handleArchiveVehicle}
+        archiveLabel="Archive vehicle"
+      />
 
       <div className="mx-auto w-full max-w-[600px] flex-1">
         <div className="flex flex-col gap-2 px-6 py-4">
@@ -88,7 +110,7 @@ export function VehiculePage() {
         <SectionTitle
           title="Documents"
           addLabel="Upload document"
-          onAdd={() => setDialogOpen(true)}
+          onAdd={() => setUploadOpen(true)}
         />
         <div className="flex flex-col gap-1 px-6 pb-4">
           {DOC_TYPES.map((type) => {
@@ -109,7 +131,12 @@ export function VehiculePage() {
           <>
             <SectionTitle title="Document history" />
             {documents.map((doc) => (
-              <DocumentRow key={doc.id} doc={doc} parentLabel={vehicle.registration} />
+              <DocumentRow
+                key={doc.id}
+                doc={doc}
+                parentLabel={vehicle.registration}
+                onArchive={() => handleArchiveDocument(doc.id)}
+              />
             ))}
           </>
         )}
@@ -117,15 +144,26 @@ export function VehiculePage() {
 
       <Footer />
 
-      {dialogOpen && clientId && vehicleId && (
+      {uploadOpen && clientId && vehicleId && (
         <AddDocumentDialog
           clientId={clientId}
           parentType="vehicle"
           parentId={vehicleId}
           docTypes={[...DOC_TYPES]}
-          onClose={() => setDialogOpen(false)}
+          onClose={() => setUploadOpen(false)}
           onCreated={() => {
-            setDialogOpen(false)
+            setUploadOpen(false)
+            void load()
+          }}
+        />
+      )}
+      {editOpen && clientId && (
+        <AddVehicleDialog
+          clientId={clientId}
+          vehicle={vehicle}
+          onClose={() => setEditOpen(false)}
+          onCreated={() => {
+            setEditOpen(false)
             void load()
           }}
         />

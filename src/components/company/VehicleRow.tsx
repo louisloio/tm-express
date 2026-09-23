@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { InlineLabel } from '../InlineLabel'
+import { RowMenu } from '../RowMenu'
 import { formatDate, getDocSlotStatus } from '../../lib/format'
 import type { DocType, Document, Vehicle } from '../../types/database'
 
@@ -15,15 +16,14 @@ interface VehicleRowProps {
   clientId: string
   vehicle: Vehicle
   docsByType: Map<DocType, Document>
+  onEdit: () => void
+  onArchive: () => Promise<void>
 }
 
-export function VehicleRow({ clientId, vehicle, docsByType }: VehicleRowProps) {
+export function VehicleRow({ clientId, vehicle, docsByType, onEdit, onArchive }: VehicleRowProps) {
   return (
-    <Link
-      to={`/clients/${clientId}/vehicles/${vehicle.id}`}
-      className="flex gap-2 border-t border-border-divider bg-bg-row px-6 py-3"
-    >
-      <div className="flex flex-1 flex-col gap-2">
+    <div className="flex items-start gap-2 border-t border-border-divider bg-bg-row px-6 py-3">
+      <Link to={`/clients/${clientId}/vehicles/${vehicle.id}`} className="flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-1">
           <span className="text-[12px] font-semibold text-text-secondary">Registration</span>
           <span className="text-[16px] font-semibold text-text-primary">
@@ -44,7 +44,8 @@ export function VehicleRow({ clientId, vehicle, docsByType }: VehicleRowProps) {
             )
           })}
         </div>
-      </div>
-    </Link>
+      </Link>
+      <RowMenu onEdit={onEdit} onArchive={onArchive} archiveLabel="Archive vehicle" />
+    </div>
   )
 }

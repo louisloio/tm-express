@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { INFRINGEMENT_CATEGORIES, INFRINGEMENT_TAXONOMY } from '../lib/infringements'
 import { supabase } from '../lib/supabase'
-import type { Driver, InfringementCategory, Vehicle } from '../types/database'
+import type { Driver, Infringement, InfringementCategory, Vehicle } from '../types/database'
 
 interface AddInfringementDialogProps {
   clientId: string
   drivers: Driver[]
   vehicles: Vehicle[]
+  infringement?: Infringement
   onClose: () => void
   onCreated: () => void
 }
@@ -19,16 +20,22 @@ export function AddInfringementDialog({
   clientId,
   drivers,
   vehicles,
+  infringement,
   onClose,
   onCreated,
 }: AddInfringementDialogProps) {
-  const [category, setCategory] = useState<InfringementCategory>(INFRINGEMENT_CATEGORIES[0])
-  const [type, setType] = useState(INFRINGEMENT_TAXONOMY[INFRINGEMENT_CATEGORIES[0]].types[0])
-  const [driverId, setDriverId] = useState('')
-  const [vehicleId, setVehicleId] = useState('')
-  const [date, setDate] = useState(today())
-  const [notes, setNotes] = useState('')
-  const [resolved, setResolved] = useState(false)
+  const isEditing = !!infringement
+  const [category, setCategory] = useState<InfringementCategory>(
+    infringement?.category ?? INFRINGEMENT_CATEGORIES[0],
+  )
+  const [type, setType] = useState(
+    infringement?.type ?? INFRINGEMENT_TAXONOMY[INFRINGEMENT_CATEGORIES[0]].types[0],
+  )
+  const [driverId, setDriverId] = useState(infringement?.driver_id ?? '')
+  const [vehicleId, setVehicleId] = useState(infringement?.vehicle_id ?? '')
+  const [date, setDate] = useState(infringement?.date ?? today())
+  const [notes, setNotes] = useState(infringement?.notes ?? '')
+  const [resolved, setResolved] = useState(infringement?.resolved ?? false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -47,8 +54,8 @@ export function AddInfringementDialog({
     e.preventDefault()
     setSubmitting(true)
     setError(null)
-    const { error } = await supabase.from('infringements').insert({
-      client_id: clientId,
+
+    const payload = {
       category,
       type,
       driver_id: showDriver && driverId ? driverId : null,
@@ -56,7 +63,12 @@ export function AddInfringementDialog({
       date,
       notes: notes.trim() || null,
       resolved,
-    })
+    }
+
+    const { error } = isEditing
+      ? await supabase.from('infringements').update(payload).eq('id', infringement.id)
+      : await supabase.from('infringements').insert({ client_id: clientId, ...payload })
+
     setSubmitting(false)
     if (error) {
       setError(error.message)
@@ -69,7 +81,9 @@ export function AddInfringementDialog({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
       <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-y-auto rounded-t-2xl bg-bg-white sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-border-divider px-6 py-4">
-          <h2 className="text-[18px] font-semibold text-text-primary">Log infringement</h2>
+          <h2 className="text-[18px] font-semibold text-text-primary">
+            {isEditing ? 'Edit infringement' : 'Log infringement'}
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -208,7 +222,7 @@ export function AddInfringementDialog({
               disabled={submitting}
               className="btn-primary flex-1 rounded-lg px-6 py-3 text-[15px] font-medium text-white disabled:opacity-60"
             >
-              {submitting ? 'Saving…' : 'Log infringement'}
+              {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Log infringement'}
             </button>
           </div>
         </form>

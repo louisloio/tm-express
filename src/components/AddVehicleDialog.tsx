@@ -1,15 +1,18 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import type { Vehicle } from '../types/database'
 
 interface AddVehicleDialogProps {
   clientId: string
+  vehicle?: Vehicle
   onClose: () => void
   onCreated: () => void
 }
 
-export function AddVehicleDialog({ clientId, onClose, onCreated }: AddVehicleDialogProps) {
-  const [registration, setRegistration] = useState('')
-  const [type, setType] = useState('')
+export function AddVehicleDialog({ clientId, vehicle, onClose, onCreated }: AddVehicleDialogProps) {
+  const isEditing = !!vehicle
+  const [registration, setRegistration] = useState(vehicle?.registration ?? '')
+  const [type, setType] = useState(vehicle?.type ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -17,11 +20,18 @@ export function AddVehicleDialog({ clientId, onClose, onCreated }: AddVehicleDia
     e.preventDefault()
     setSubmitting(true)
     setError(null)
-    const { error } = await supabase.from('vehicles').insert({
-      client_id: clientId,
-      registration: registration.trim(),
-      type: type.trim() || null,
-    })
+
+    const { error } = isEditing
+      ? await supabase
+          .from('vehicles')
+          .update({ registration: registration.trim(), type: type.trim() || null })
+          .eq('id', vehicle.id)
+      : await supabase.from('vehicles').insert({
+          client_id: clientId,
+          registration: registration.trim(),
+          type: type.trim() || null,
+        })
+
     setSubmitting(false)
     if (error) {
       setError(error.message)
@@ -34,7 +44,9 @@ export function AddVehicleDialog({ clientId, onClose, onCreated }: AddVehicleDia
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
       <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-y-auto rounded-t-2xl bg-bg-white sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-border-divider px-6 py-4">
-          <h2 className="text-[18px] font-semibold text-text-primary">Add vehicle</h2>
+          <h2 className="text-[18px] font-semibold text-text-primary">
+            {isEditing ? 'Edit vehicle' : 'Add vehicle'}
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -87,7 +99,7 @@ export function AddVehicleDialog({ clientId, onClose, onCreated }: AddVehicleDia
               disabled={submitting}
               className="btn-primary flex-1 rounded-lg px-6 py-3 text-[15px] font-medium text-white disabled:opacity-60"
             >
-              {submitting ? 'Adding…' : 'Add vehicle'}
+              {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Add vehicle'}
             </button>
           </div>
         </form>

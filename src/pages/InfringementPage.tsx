@@ -1,61 +1,72 @@
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { AddInfringementDialog } from '../components/AddInfringementDialog'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { InlineLabel } from '../components/InlineLabel'
 import { TopSubPage } from '../components/TopSubPage'
+import { archiveRow } from '../lib/archive'
 import { formatDate } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import type { Driver, Infringement, Vehicle } from '../types/database'
 
 export function InfringementPage() {
   const { clientId, infringementId } = useParams<{ clientId: string; infringementId: string }>()
+  const navigate = useNavigate()
   const [infringement, setInfringement] = useState<Infringement | null>(null)
   const [driver, setDriver] = useState<Driver | null>(null)
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
+  const [clientDrivers, setClientDrivers] = useState<Driver[]>([])
+  const [clientVehicles, setClientVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
+
+  const load = useCallback(async () => {
+    if (!infringementId || !clientId) return
+
+    const { data, error } = await supabase
+      .from('infringements')
+      .select('*')
+      .eq('id', infringementId)
+      .is('archived_at', null)
+      .single()
+    if (error || !data) {
+      setError(error?.message ?? 'Infringement not found.')
+      setLoading(false)
+      return
+    }
+    setInfringement(data)
+
+    const [driverRes, vehicleRes, clientDriversRes, clientVehiclesRes] = await Promise.all([
+      data.driver_id
+        ? supabase.from('drivers').select('*').eq('id', data.driver_id).single()
+        : Promise.resolve({ data: null }),
+      data.vehicle_id
+        ? supabase.from('vehicles').select('*').eq('id', data.vehicle_id).single()
+        : Promise.resolve({ data: null }),
+      supabase.from('drivers').select('*').eq('client_id', clientId).is('archived_at', null),
+      supabase.from('vehicles').select('*').eq('client_id', clientId).is('archived_at', null),
+    ])
+    setDriver(driverRes.data)
+    setVehicle(vehicleRes.data)
+    setClientDrivers(clientDriversRes.data ?? [])
+    setClientVehicles(clientVehiclesRes.data ?? [])
+    setError(null)
+    setLoading(false)
+  }, [infringementId, clientId])
 
   useEffect(() => {
-    if (!infringementId) return
-    let cancelled = false
-
-    async function load() {
-      const { data, error } = await supabase
-        .from('infringements')
-        .select('*')
-        .eq('id', infringementId!)
-        .single()
-      if (cancelled) return
-      if (error || !data) {
-        setError(error?.message ?? 'Infringement not found.')
-        setLoading(false)
-        return
-      }
-      setInfringement(data)
-
-      const [driverRes, vehicleRes] = await Promise.all([
-        data.driver_id
-          ? supabase.from('drivers').select('*').eq('id', data.driver_id).single()
-          : Promise.resolve({ data: null }),
-        data.vehicle_id
-          ? supabase.from('vehicles').select('*').eq('id', data.vehicle_id).single()
-          : Promise.resolve({ data: null }),
-      ])
-      if (cancelled) return
-      setDriver(driverRes.data)
-      setVehicle(vehicleRes.data)
-      setError(null)
-      setLoading(false)
-    }
-
     void load()
-    return () => {
-      cancelled = true
-    }
-  }, [infringementId])
+  }, [load])
 
   const backTo = clientId ? `/clients/${clientId}` : '/'
+
+  async function handleArchive() {
+    if (!infringementId) return
+    await archiveRow('infringements', infringementId)
+    navigate(backTo)
+  }
 
   if (loading) {
     return (
@@ -81,7 +92,13 @@ export function InfringementPage() {
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
       <Header />
-      <TopSubPage backTo={backTo} title={infringement.type} />
+      <TopSubPage
+        backTo={backTo}
+        title={infringement.type}
+        onEdit={() => setEditOpen(true)}
+        onArchive={handleArchive}
+        archiveLabel="Archive infringement"
+      />
 
       <div className="mx-auto w-full max-w-[600px] flex-1">
         <div className="flex flex-col gap-2 px-6 py-4">
@@ -105,6 +122,20 @@ export function InfringementPage() {
       </div>
 
       <Footer />
+
+      {editOpen && clientId && (
+        <AddInfringementDialog
+          clientId={clientId}
+          drivers={clientDrivers}
+          vehicles={clientVehicles}
+          infringement={infringement}
+          onClose={() => setEditOpen(false)}
+          onCreated={() => {
+            setEditOpen(false)
+            void load()
+          }}
+        />
+      )}
     </div>
   )
 }

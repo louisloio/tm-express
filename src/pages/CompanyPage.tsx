@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { AddDriverDialog } from '../components/AddDriverDialog'
 import { AddInfringementDialog } from '../components/AddInfringementDialog'
 import { AddVehicleDialog } from '../components/AddVehicleDialog'
@@ -10,12 +10,14 @@ import { InfringementRow } from '../components/company/InfringementRow'
 import { LastVisitRow } from '../components/company/LastVisitRow'
 import { TodoRow } from '../components/company/TodoRow'
 import { VehicleRow } from '../components/company/VehicleRow'
+import { EditClientDialog } from '../components/EditClientDialog'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { InlineLabel } from '../components/InlineLabel'
 import { OnboardingBadge } from '../components/OnboardingBadge'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
+import { archiveRow } from '../lib/archive'
 import { latestDocsByParent } from '../lib/documents'
 import { supabase } from '../lib/supabase'
 import { chaseTodo, fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
@@ -42,16 +44,23 @@ interface CompanyData {
   todoTargets: Map<string, { href: string }>
 }
 
+type DialogState =
+  | { type: 'client-edit' }
+  | { type: 'vehicle'; vehicle?: Vehicle }
+  | { type: 'driver'; driver?: Driver }
+  | { type: 'visit'; visit?: Visit }
+  | { type: 'infringement'; infringement?: Infringement }
+  | null
+
 export function CompanyPage() {
   const { clientId } = useParams<{ clientId: string }>()
+  const navigate = useNavigate()
   const [data, setData] = useState<CompanyData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const [todoWarning, setTodoWarning] = useState<string | null>(null)
-  const [openDialog, setOpenDialog] = useState<
-    'vehicle' | 'driver' | 'visit' | 'infringement' | null
-  >(null)
+  const [dialog, setDialog] = useState<DialogState>(null)
 
   const load = useCallback(async () => {
     if (!clientId) return
@@ -71,25 +80,38 @@ export function CompanyPage() {
 
     const [clientRes, contactsRes, vehiclesRes, driversRes, visitsRes, infringementsRes, documentsRes, todos] =
       await Promise.all([
-        supabase.from('clients').select('*').eq('id', clientId).single(),
+        supabase.from('clients').select('*').eq('id', clientId).is('archived_at', null).single(),
         supabase.from('client_contacts').select('*').eq('client_id', clientId),
-        supabase.from('vehicles').select('*').eq('client_id', clientId).order('registration'),
-        supabase.from('drivers').select('*').eq('client_id', clientId).order('name'),
+        supabase
+          .from('vehicles')
+          .select('*')
+          .eq('client_id', clientId)
+          .is('archived_at', null)
+          .order('registration'),
+        supabase
+          .from('drivers')
+          .select('*')
+          .eq('client_id', clientId)
+          .is('archived_at', null)
+          .order('name'),
         supabase
           .from('visits')
           .select('*')
           .eq('client_id', clientId)
+          .is('archived_at', null)
           .order('date', { ascending: false })
           .limit(1),
         supabase
           .from('infringements')
           .select('*')
           .eq('client_id', clientId)
+          .is('archived_at', null)
           .order('date', { ascending: false }),
         supabase
           .from('documents')
           .select('*')
           .eq('client_id', clientId)
+          .is('archived_at', null)
           .order('uploaded_at', { ascending: false }),
         fetchOpenTodos(clientId),
       ])
@@ -139,6 +161,37 @@ export function CompanyPage() {
       return
     }
     await chaseTodo(todo, recipients)
+    void load()
+  }
+
+  async function handleArchiveClient() {
+    if (!clientId) return
+    await archiveRow('clients', clientId)
+    navigate('/')
+  }
+
+  async function handleArchiveVehicle(id: string) {
+    await archiveRow('vehicles', id)
+    void load()
+  }
+
+  async function handleArchiveDriver(id: string) {
+    await archiveRow('drivers', id)
+    void load()
+  }
+
+  async function handleArchiveVisit(id: string) {
+    await archiveRow('visits', id)
+    void load()
+  }
+
+  async function handleArchiveInfringement(id: string) {
+    await archiveRow('infringements', id)
+    void load()
+  }
+
+  async function handleArchiveDocument(id: string) {
+    await archiveRow('documents', id)
     void load()
   }
 
@@ -196,7 +249,13 @@ export function CompanyPage() {
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
       <Header />
-      <TopSubPage backTo="/" title={client.company_name} />
+      <TopSubPage
+        backTo="/"
+        title={client.company_name}
+        onEdit={() => setDialog({ type: 'client-edit' })}
+        onArchive={handleArchiveClient}
+        archiveLabel="Archive client"
+      />
 
       <div className="mx-auto w-full max-w-[600px] flex-1">
         {/* CompanyDetails */}
@@ -251,7 +310,7 @@ export function CompanyPage() {
         <SectionTitle
           title={`Vehicles (${vehicles.length})`}
           addLabel="Add vehicle"
-          onAdd={() => setOpenDialog('vehicle')}
+          onAdd={() => setDialog({ type: 'vehicle' })}
         />
         {vehicles.length === 0 ? (
           <p className="px-6 pb-4 text-[14px] text-text-secondary">No vehicles yet.</p>
@@ -262,6 +321,8 @@ export function CompanyPage() {
               clientId={client.id}
               vehicle={v}
               docsByType={vehicleDocs.get(v.id) ?? new Map()}
+              onEdit={() => setDialog({ type: 'vehicle', vehicle: v })}
+              onArchive={() => handleArchiveVehicle(v.id)}
             />
           ))
         )}
@@ -270,7 +331,7 @@ export function CompanyPage() {
         <SectionTitle
           title={`Drivers (${drivers.length})`}
           addLabel="Add driver"
-          onAdd={() => setOpenDialog('driver')}
+          onAdd={() => setDialog({ type: 'driver' })}
         />
         {drivers.length === 0 ? (
           <p className="px-6 pb-4 text-[14px] text-text-secondary">No drivers yet.</p>
@@ -282,6 +343,8 @@ export function CompanyPage() {
               driver={d}
               docsByType={driverDocs.get(d.id) ?? new Map()}
               infringementCount={infringementCountByDriver.get(d.id) ?? 0}
+              onEdit={() => setDialog({ type: 'driver', driver: d })}
+              onArchive={() => handleArchiveDriver(d.id)}
             />
           ))
         )}
@@ -290,10 +353,15 @@ export function CompanyPage() {
         <SectionTitle
           title="Last Visit"
           addLabel="Log a visit"
-          onAdd={() => setOpenDialog('visit')}
+          onAdd={() => setDialog({ type: 'visit' })}
         />
         {latestVisit ? (
-          <LastVisitRow clientId={client.id} visit={latestVisit} />
+          <LastVisitRow
+            clientId={client.id}
+            visit={latestVisit}
+            onEdit={() => setDialog({ type: 'visit', visit: latestVisit })}
+            onArchive={() => handleArchiveVisit(latestVisit.id)}
+          />
         ) : (
           <p className="px-6 pb-4 text-[14px] text-text-secondary">No visits logged yet.</p>
         )}
@@ -302,7 +370,7 @@ export function CompanyPage() {
         <SectionTitle
           title={`Infringements (${infringements.length})`}
           addLabel="Log infringement"
-          onAdd={() => setOpenDialog('infringement')}
+          onAdd={() => setDialog({ type: 'infringement' })}
         />
         {infringements.length === 0 ? (
           <p className="px-6 pb-4 text-[14px] text-text-secondary">No infringements logged.</p>
@@ -313,6 +381,8 @@ export function CompanyPage() {
               clientId={client.id}
               infringement={inf}
               linkedTo={linkedToLabel(inf)}
+              onEdit={() => setDialog({ type: 'infringement', infringement: inf })}
+              onArchive={() => handleArchiveInfringement(inf.id)}
             />
           ))
         )}
@@ -323,51 +393,70 @@ export function CompanyPage() {
           <p className="px-6 pb-4 text-[14px] text-text-secondary">No documents uploaded yet.</p>
         ) : (
           documents.map((doc) => (
-            <DocumentRow key={doc.id} doc={doc} parentLabel={parentLabel(doc)} />
+            <DocumentRow
+              key={doc.id}
+              doc={doc}
+              parentLabel={parentLabel(doc)}
+              onArchive={() => handleArchiveDocument(doc.id)}
+            />
           ))
         )}
       </div>
 
       <Footer />
 
-      {openDialog === 'vehicle' && (
+      {dialog?.type === 'client-edit' && (
+        <EditClientDialog
+          client={client}
+          onClose={() => setDialog(null)}
+          onSaved={() => {
+            setDialog(null)
+            void load()
+          }}
+        />
+      )}
+      {dialog?.type === 'vehicle' && (
         <AddVehicleDialog
           clientId={client.id}
-          onClose={() => setOpenDialog(null)}
+          vehicle={dialog.vehicle}
+          onClose={() => setDialog(null)}
           onCreated={() => {
-            setOpenDialog(null)
+            setDialog(null)
             void load()
           }}
         />
       )}
-      {openDialog === 'driver' && (
+      {dialog?.type === 'driver' && (
         <AddDriverDialog
           clientId={client.id}
-          onClose={() => setOpenDialog(null)}
+          driver={dialog.driver}
+          onClose={() => setDialog(null)}
           onCreated={() => {
-            setOpenDialog(null)
+            setDialog(null)
             void load()
           }}
         />
       )}
-      {openDialog === 'visit' && (
+      {dialog?.type === 'visit' && (
         <AddVisitDialog
           clientId={client.id}
-          onClose={() => setOpenDialog(null)}
+          visit={dialog.visit}
+          onClose={() => setDialog(null)}
           onCreated={() => {
-            setOpenDialog(null)
+            setDialog(null)
             void load()
           }}
         />
       )}
-      {openDialog === 'infringement' && (
+      {dialog?.type === 'infringement' && (
         <AddInfringementDialog
           clientId={client.id}
           drivers={drivers}
           vehicles={vehicles}
-          onClose={() => setOpenDialog(null)}
+          infringement={dialog.infringement}
+          onClose={() => setDialog(null)}
           onCreated={() => {
-            setOpenDialog(null)
+            setDialog(null)
             void load()
           }}
         />

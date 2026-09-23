@@ -9,6 +9,7 @@ export type Client = {
   operating_centre: string | null
   onboarding_status: OnboardingStatus
   created_at: string
+  archived_at: string | null
 }
 
 export type ClientContact = {
@@ -25,6 +26,7 @@ export type Vehicle = {
   registration: string
   type: string | null
   created_at: string
+  archived_at: string | null
 }
 
 export type Driver = {
@@ -32,6 +34,7 @@ export type Driver = {
   client_id: string
   name: string
   created_at: string
+  archived_at: string | null
 }
 
 export type Visit = {
@@ -40,6 +43,7 @@ export type Visit = {
   date: string
   notes: string | null
   created_at: string
+  archived_at: string | null
 }
 
 export type InfringementCategory =
@@ -59,6 +63,7 @@ export type Infringement = {
   notes: string | null
   resolved: boolean
   created_at: string
+  archived_at: string | null
 }
 
 export type DocParentType = 'vehicle' | 'driver' | 'visit' | 'client'
@@ -84,6 +89,7 @@ export type Document = {
   expiry_date: string | null
   reminder_days_before: number | null
   uploaded_at: string
+  archived_at: string | null
 }
 
 export type TodoSourceType = 'document' | 'infringement'
