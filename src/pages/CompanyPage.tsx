@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { AddDriverDialog } from '../components/AddDriverDialog'
+import { AddInfringementDialog } from '../components/AddInfringementDialog'
+import { AddVehicleDialog } from '../components/AddVehicleDialog'
+import { AddVisitDialog } from '../components/AddVisitDialog'
 import { DocumentRow } from '../components/company/DocumentRow'
 import { DriverRow } from '../components/company/DriverRow'
 import { InfringementRow } from '../components/company/InfringementRow'
@@ -45,6 +49,9 @@ export function CompanyPage() {
   const [error, setError] = useState<string | null>(null)
 
   const [todoWarning, setTodoWarning] = useState<string | null>(null)
+  const [openDialog, setOpenDialog] = useState<
+    'vehicle' | 'driver' | 'visit' | 'infringement' | null
+  >(null)
 
   const load = useCallback(async () => {
     if (!clientId) return
@@ -241,7 +248,11 @@ export function CompanyPage() {
         )}
 
         {/* Vehicles */}
-        <SectionTitle title={`Vehicles (${vehicles.length})`} addLabel="Add vehicle" />
+        <SectionTitle
+          title={`Vehicles (${vehicles.length})`}
+          addLabel="Add vehicle"
+          onAdd={() => setOpenDialog('vehicle')}
+        />
         {vehicles.length === 0 ? (
           <p className="px-6 pb-4 text-[14px] text-text-secondary">No vehicles yet.</p>
         ) : (
@@ -256,7 +267,11 @@ export function CompanyPage() {
         )}
 
         {/* Drivers */}
-        <SectionTitle title={`Drivers (${drivers.length})`} addLabel="Add driver" />
+        <SectionTitle
+          title={`Drivers (${drivers.length})`}
+          addLabel="Add driver"
+          onAdd={() => setOpenDialog('driver')}
+        />
         {drivers.length === 0 ? (
           <p className="px-6 pb-4 text-[14px] text-text-secondary">No drivers yet.</p>
         ) : (
@@ -272,7 +287,11 @@ export function CompanyPage() {
         )}
 
         {/* Last Visit */}
-        <SectionTitle title="Last Visit" addLabel="Log a visit" />
+        <SectionTitle
+          title="Last Visit"
+          addLabel="Log a visit"
+          onAdd={() => setOpenDialog('visit')}
+        />
         {latestVisit ? (
           <LastVisitRow clientId={client.id} visit={latestVisit} />
         ) : (
@@ -280,7 +299,11 @@ export function CompanyPage() {
         )}
 
         {/* Infringements */}
-        <SectionTitle title={`Infringements (${infringements.length})`} addLabel="Log infringement" />
+        <SectionTitle
+          title={`Infringements (${infringements.length})`}
+          addLabel="Log infringement"
+          onAdd={() => setOpenDialog('infringement')}
+        />
         {infringements.length === 0 ? (
           <p className="px-6 pb-4 text-[14px] text-text-secondary">No infringements logged.</p>
         ) : (
@@ -306,6 +329,49 @@ export function CompanyPage() {
       </div>
 
       <Footer />
+
+      {openDialog === 'vehicle' && (
+        <AddVehicleDialog
+          clientId={client.id}
+          onClose={() => setOpenDialog(null)}
+          onCreated={() => {
+            setOpenDialog(null)
+            void load()
+          }}
+        />
+      )}
+      {openDialog === 'driver' && (
+        <AddDriverDialog
+          clientId={client.id}
+          onClose={() => setOpenDialog(null)}
+          onCreated={() => {
+            setOpenDialog(null)
+            void load()
+          }}
+        />
+      )}
+      {openDialog === 'visit' && (
+        <AddVisitDialog
+          clientId={client.id}
+          onClose={() => setOpenDialog(null)}
+          onCreated={() => {
+            setOpenDialog(null)
+            void load()
+          }}
+        />
+      )}
+      {openDialog === 'infringement' && (
+        <AddInfringementDialog
+          clientId={client.id}
+          drivers={drivers}
+          vehicles={vehicles}
+          onClose={() => setOpenDialog(null)}
+          onCreated={() => {
+            setOpenDialog(null)
+            void load()
+          }}
+        />
+      )}
     </div>
   )
 }
