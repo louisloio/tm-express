@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AddDriverDialog } from '../components/AddDriverDialog'
 import { AddInfringementDialog } from '../components/AddInfringementDialog'
 import { AddVehicleDialog } from '../components/AddVehicleDialog'
@@ -79,7 +79,7 @@ export function CompanyPage() {
 
     const [clientRes, contactsRes, vehiclesRes, driversRes, visitsRes, infringementsRes, documentsRes, todos] =
       await Promise.all([
-        supabase.from('clients').select('*').eq('id', clientId).is('archived_at', null).single(),
+        supabase.from('clients').select('*').eq('id', clientId).is('archived_at', null).maybeSingle(),
         supabase.from('client_contacts').select('*').eq('client_id', clientId),
         supabase
           .from('vehicles')
@@ -207,7 +207,12 @@ export function CompanyPage() {
     return (
       <div className="flex min-h-screen flex-col bg-bg-app">
         <Header />
-        <p className="px-6 py-8 text-[14px] text-danger-text">{error ?? 'Client not found.'}</p>
+        <div className="px-6 py-8">
+          <p className="text-[14px] text-danger-text">{error ?? 'Client not found.'}</p>
+          <Link to="/" className="mt-2 inline-block text-[14px] font-medium text-[#0060e3]">
+            Back to clients
+          </Link>
+        </div>
       </div>
     )
   }

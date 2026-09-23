@@ -28,7 +28,7 @@ export function DriverPage() {
   const load = useCallback(async () => {
     if (!driverId) return
     const [driverRes, documentsRes] = await Promise.all([
-      supabase.from('drivers').select('*').eq('id', driverId).is('archived_at', null).single(),
+      supabase.from('drivers').select('*').eq('id', driverId).is('archived_at', null).maybeSingle(),
       supabase
         .from('documents')
         .select('*')

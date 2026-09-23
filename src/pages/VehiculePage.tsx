@@ -28,7 +28,7 @@ export function VehiculePage() {
   const load = useCallback(async () => {
     if (!vehicleId) return
     const [vehicleRes, documentsRes] = await Promise.all([
-      supabase.from('vehicles').select('*').eq('id', vehicleId).is('archived_at', null).single(),
+      supabase.from('vehicles').select('*').eq('id', vehicleId).is('archived_at', null).maybeSingle(),
       supabase
         .from('documents')
         .select('*')

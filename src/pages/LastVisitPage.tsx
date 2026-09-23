@@ -25,7 +25,7 @@ export function LastVisitPage() {
       .select('*')
       .eq('id', visitId)
       .is('archived_at', null)
-      .single()
+      .maybeSingle()
     if (error || !data) {
       setError(error?.message ?? 'Visit not found.')
     } else {

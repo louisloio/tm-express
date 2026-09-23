@@ -30,7 +30,7 @@ export function InfringementPage() {
       .select('*')
       .eq('id', infringementId)
       .is('archived_at', null)
-      .single()
+      .maybeSingle()
     if (error || !data) {
       setError(error?.message ?? 'Infringement not found.')
       setLoading(false)
@@ -40,10 +40,10 @@ export function InfringementPage() {
 
     const [driverRes, vehicleRes, clientDriversRes, clientVehiclesRes] = await Promise.all([
       data.driver_id
-        ? supabase.from('drivers').select('*').eq('id', data.driver_id).single()
+        ? supabase.from('drivers').select('*').eq('id', data.driver_id).maybeSingle()
         : Promise.resolve({ data: null }),
       data.vehicle_id
-        ? supabase.from('vehicles').select('*').eq('id', data.vehicle_id).single()
+        ? supabase.from('vehicles').select('*').eq('id', data.vehicle_id).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from('drivers').select('*').eq('client_id', clientId).is('archived_at', null),
       supabase.from('vehicles').select('*').eq('client_id', clientId).is('archived_at', null),
