@@ -35,6 +35,11 @@ body {
   margin: 0;
   background: var(--color-bg-app);
   font-family: var(--font-sans);
+  /* iOS standalone mode (apple-mobile-web-app-status-bar-style:
+     black-translucent, see index.html) draws content full-screen under the
+     status bar/notch — without this, the header sits behind it. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .btn-primary {
