@@ -86,6 +86,34 @@ export type Document = {
   uploaded_at: string
 }
 
+export type TodoSourceType = 'document' | 'infringement'
+export type TodoStatus = 'open' | 'resolved'
+
+export type Todo = {
+  id: string
+  client_id: string
+  source_type: TodoSourceType
+  source_id: string
+  description: string
+  status: TodoStatus
+  snoozed_until: string | null
+  created_at: string
+  resolved_at: string | null
+}
+
+export type EmailChaseScope = 'single_todo' | 'all_outstanding'
+
+export type EmailChase = {
+  id: string
+  client_id: string
+  scope: EmailChaseScope
+  todo_id: string | null
+  recipients: string[]
+  subject: string
+  body: string
+  sent_at: string
+}
+
 export type VolOperator = {
   licence_number: string
   geographic_region: string | null
@@ -156,6 +184,19 @@ export interface Database {
         Update: Partial<Document>
         Relationships: []
       }
+      todos: {
+        Row: Todo
+        Insert: Partial<Todo> &
+          Pick<Todo, 'client_id' | 'source_type' | 'source_id' | 'description'>
+        Update: Partial<Todo>
+        Relationships: []
+      }
+      email_chases: {
+        Row: EmailChase
+        Insert: Partial<EmailChase> & Pick<EmailChase, 'client_id' | 'scope' | 'subject' | 'body'>
+        Update: Partial<EmailChase>
+        Relationships: []
+      }
       vol_operators: {
         Row: VolOperator
         Insert: Partial<VolOperator> & Pick<VolOperator, 'licence_number' | 'operator_name'>
@@ -164,6 +205,11 @@ export interface Database {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      reconcile_todos: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
+    }
   }
 }

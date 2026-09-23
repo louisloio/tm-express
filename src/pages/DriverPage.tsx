@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { AddDocumentDialog } from '../components/AddDocumentDialog'
 import { DocumentRow } from '../components/company/DocumentRow'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
@@ -18,37 +19,32 @@ export function DriverPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  const load = useCallback(async () => {
+    if (!driverId) return
+    const [driverRes, documentsRes] = await Promise.all([
+      supabase.from('drivers').select('*').eq('id', driverId).single(),
+      supabase
+        .from('documents')
+        .select('*')
+        .eq('parent_type', 'driver')
+        .eq('parent_id', driverId)
+        .order('uploaded_at', { ascending: false }),
+    ])
+    if (driverRes.error || !driverRes.data) {
+      setError(driverRes.error?.message ?? 'Driver not found.')
+    } else {
+      setDriver(driverRes.data)
+      setDocuments(documentsRes.data ?? [])
+      setError(null)
+    }
+    setLoading(false)
+  }, [driverId])
 
   useEffect(() => {
-    if (!driverId) return
-    let cancelled = false
-
-    async function load() {
-      const [driverRes, documentsRes] = await Promise.all([
-        supabase.from('drivers').select('*').eq('id', driverId!).single(),
-        supabase
-          .from('documents')
-          .select('*')
-          .eq('parent_type', 'driver')
-          .eq('parent_id', driverId!)
-          .order('uploaded_at', { ascending: false }),
-      ])
-      if (cancelled) return
-      if (driverRes.error || !driverRes.data) {
-        setError(driverRes.error?.message ?? 'Driver not found.')
-      } else {
-        setDriver(driverRes.data)
-        setDocuments(documentsRes.data ?? [])
-        setError(null)
-      }
-      setLoading(false)
-    }
-
     void load()
-    return () => {
-      cancelled = true
-    }
-  }, [driverId])
+  }, [load])
 
   const backTo = clientId ? `/clients/${clientId}` : '/'
 
@@ -71,7 +67,12 @@ export function DriverPage() {
     )
   }
 
-  const latestByType = new Map(documents.map((d) => [d.doc_type, d]))
+  // `documents` is ordered newest-first, so the first occurrence of each
+  // doc_type is the current one — keep it, ignore older duplicates.
+  const latestByType = new Map<Document['doc_type'], Document>()
+  for (const d of documents) {
+    if (!latestByType.has(d.doc_type)) latestByType.set(d.doc_type, d)
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
@@ -83,7 +84,11 @@ export function DriverPage() {
           <InlineLabel label="Name" value={driver.name} />
         </div>
 
-        <SectionTitle title="Documents" addLabel="Upload document" />
+        <SectionTitle
+          title="Documents"
+          addLabel="Upload document"
+          onAdd={() => setDialogOpen(true)}
+        />
         <div className="flex flex-col gap-1 px-6 pb-4">
           {DOC_TYPES.map((type) => {
             const doc = latestByType.get(type)
@@ -109,6 +114,20 @@ export function DriverPage() {
       </div>
 
       <Footer />
+
+      {dialogOpen && clientId && driverId && (
+        <AddDocumentDialog
+          clientId={clientId}
+          parentType="driver"
+          parentId={driverId}
+          docTypes={[...DOC_TYPES]}
+          onClose={() => setDialogOpen(false)}
+          onCreated={() => {
+            setDialogOpen(false)
+            void load()
+          }}
+        />
+      )}
     </div>
   )
 }

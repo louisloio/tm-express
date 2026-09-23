@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { DocumentRow } from '../components/company/DocumentRow'
 import { DriverRow } from '../components/company/DriverRow'
 import { InfringementRow } from '../components/company/InfringementRow'
 import { LastVisitRow } from '../components/company/LastVisitRow'
+import { TodoRow } from '../components/company/TodoRow'
 import { VehicleRow } from '../components/company/VehicleRow'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
@@ -13,12 +14,14 @@ import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
 import { latestDocsByParent } from '../lib/documents'
 import { supabase } from '../lib/supabase'
+import { chaseTodo, fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
 import type {
   Client,
   ClientContact,
   Document,
   Driver,
   Infringement,
+  Todo,
   Vehicle,
   Visit,
 } from '../types/database'
@@ -31,6 +34,8 @@ interface CompanyData {
   latestVisit: Visit | null
   infringements: Infringement[]
   documents: Document[]
+  todos: Todo[]
+  todoTargets: Map<string, { href: string }>
 }
 
 export function CompanyPage() {
@@ -39,72 +44,96 @@ export function CompanyPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const [todoWarning, setTodoWarning] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
     if (!clientId) return
-    let cancelled = false
+    setLoading(true)
 
-    async function load() {
-      setLoading(true)
-      const [clientRes, contactsRes, vehiclesRes, driversRes, visitsRes, infringementsRes, documentsRes] =
-        await Promise.all([
-          supabase.from('clients').select('*').eq('id', clientId!).single(),
-          supabase.from('client_contacts').select('*').eq('client_id', clientId!),
-          supabase.from('vehicles').select('*').eq('client_id', clientId!).order('registration'),
-          supabase.from('drivers').select('*').eq('client_id', clientId!).order('name'),
-          supabase
-            .from('visits')
-            .select('*')
-            .eq('client_id', clientId!)
-            .order('date', { ascending: false })
-            .limit(1),
-          supabase
-            .from('infringements')
-            .select('*')
-            .eq('client_id', clientId!)
-            .order('date', { ascending: false }),
-          supabase
-            .from('documents')
-            .select('*')
-            .eq('client_id', clientId!)
-            .order('uploaded_at', { ascending: false }),
-        ])
+    try {
+      await reconcileTodos()
+      setTodoWarning(null)
+    } catch (err) {
+      // Non-fatal — the rest of the page still works with whatever todos
+      // already exist, but surface it: a silent failure here means new
+      // todos quietly stop appearing, which is easy to miss otherwise.
+      setTodoWarning(
+        err instanceof Error ? `Todo sync failed: ${err.message}` : 'Todo sync failed.',
+      )
+    }
 
-      if (cancelled) return
+    const [clientRes, contactsRes, vehiclesRes, driversRes, visitsRes, infringementsRes, documentsRes, todos] =
+      await Promise.all([
+        supabase.from('clients').select('*').eq('id', clientId).single(),
+        supabase.from('client_contacts').select('*').eq('client_id', clientId),
+        supabase.from('vehicles').select('*').eq('client_id', clientId).order('registration'),
+        supabase.from('drivers').select('*').eq('client_id', clientId).order('name'),
+        supabase
+          .from('visits')
+          .select('*')
+          .eq('client_id', clientId)
+          .order('date', { ascending: false })
+          .limit(1),
+        supabase
+          .from('infringements')
+          .select('*')
+          .eq('client_id', clientId)
+          .order('date', { ascending: false }),
+        supabase
+          .from('documents')
+          .select('*')
+          .eq('client_id', clientId)
+          .order('uploaded_at', { ascending: false }),
+        fetchOpenTodos(clientId),
+      ])
 
-      const firstError = [
-        clientRes.error,
-        contactsRes.error,
-        vehiclesRes.error,
-        driversRes.error,
-        visitsRes.error,
-        infringementsRes.error,
-        documentsRes.error,
-      ].find(Boolean)
+    const firstError = [
+      clientRes.error,
+      contactsRes.error,
+      vehiclesRes.error,
+      driversRes.error,
+      visitsRes.error,
+      infringementsRes.error,
+      documentsRes.error,
+    ].find(Boolean)
 
-      if (firstError || !clientRes.data) {
-        setError(firstError?.message ?? 'Client not found.')
-        setLoading(false)
-        return
-      }
-
-      setData({
-        client: clientRes.data,
-        contacts: contactsRes.data ?? [],
-        vehicles: vehiclesRes.data ?? [],
-        drivers: driversRes.data ?? [],
-        latestVisit: visitsRes.data?.[0] ?? null,
-        infringements: infringementsRes.data ?? [],
-        documents: documentsRes.data ?? [],
-      })
-      setError(null)
+    if (firstError || !clientRes.data) {
+      setError(firstError?.message ?? 'Client not found.')
       setLoading(false)
+      return
     }
 
-    void load()
-    return () => {
-      cancelled = true
-    }
+    const todoTargets = await resolveTodoTargets(todos)
+
+    setData({
+      client: clientRes.data,
+      contacts: contactsRes.data ?? [],
+      vehicles: vehiclesRes.data ?? [],
+      drivers: driversRes.data ?? [],
+      latestVisit: visitsRes.data?.[0] ?? null,
+      infringements: infringementsRes.data ?? [],
+      documents: documentsRes.data ?? [],
+      todos,
+      todoTargets,
+    })
+    setError(null)
+    setLoading(false)
   }, [clientId])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  async function handleChase(todo: Todo) {
+    if (!data) return
+    const recipients = data.contacts.map((c) => c.email)
+    if (recipients.length === 0) {
+      window.alert('Add a client contact first — there’s no email to chase.')
+      return
+    }
+    await chaseTodo(todo, recipients)
+    void load()
+  }
 
   if (loading) {
     return (
@@ -124,7 +153,8 @@ export function CompanyPage() {
     )
   }
 
-  const { client, contacts, vehicles, drivers, latestVisit, infringements, documents } = data
+  const { client, contacts, vehicles, drivers, latestVisit, infringements, documents, todos, todoTargets } =
+    data
 
   const vehicleDocs = latestDocsByParent(documents.filter((d) => d.parent_type === 'vehicle'))
   const driverDocs = latestDocsByParent(documents.filter((d) => d.parent_type === 'driver'))
@@ -195,11 +225,20 @@ export function CompanyPage() {
         </div>
 
         {/* Todo */}
-        <SectionTitle title="Todo (0)" />
-        <p className="px-6 pb-4 text-[14px] text-text-secondary">
-          No open items. Todos are generated automatically from document expiries and
-          infringements — this'll populate once that's wired up.
-        </p>
+        <SectionTitle title={`Todo (${todos.length})`} />
+        {todoWarning && <p className="px-6 pb-2 text-[14px] text-danger-text">{todoWarning}</p>}
+        {todos.length === 0 ? (
+          <p className="px-6 pb-4 text-[14px] text-text-secondary">No open items.</p>
+        ) : (
+          todos.map((todo) => (
+            <TodoRow
+              key={todo.id}
+              todo={todo}
+              href={todoTargets.get(todo.id)?.href ?? `/clients/${client.id}`}
+              onChase={handleChase}
+            />
+          ))
+        )}
 
         {/* Vehicles */}
         <SectionTitle title={`Vehicles (${vehicles.length})`} addLabel="Add vehicle" />
