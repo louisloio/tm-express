@@ -19,6 +19,73 @@ export type ClientContact = {
   created_at: string
 }
 
+export type Vehicle = {
+  id: string
+  client_id: string
+  registration: string
+  type: string | null
+  created_at: string
+}
+
+export type Driver = {
+  id: string
+  client_id: string
+  name: string
+  created_at: string
+}
+
+export type Visit = {
+  id: string
+  client_id: string
+  date: string
+  notes: string | null
+  created_at: string
+}
+
+export type InfringementCategory =
+  | 'Driver Hours & Tachograph'
+  | 'Vehicle Roadworthiness & Maintenance'
+  | 'Operational Loading & Weight'
+  | 'Licence & Operator Infrastructure'
+
+export type Infringement = {
+  id: string
+  client_id: string
+  category: InfringementCategory
+  type: string
+  driver_id: string | null
+  vehicle_id: string | null
+  date: string
+  notes: string | null
+  resolved: boolean
+  created_at: string
+}
+
+export type DocParentType = 'vehicle' | 'driver' | 'visit' | 'client'
+export type DocType =
+  | 'PMI'
+  | 'Brake test'
+  | 'MOT'
+  | 'VED'
+  | 'Insurance'
+  | 'Licence check'
+  | 'CPC'
+  | 'Infringement report'
+  | 'Depot visit note'
+  | 'Other'
+
+export type Document = {
+  id: string
+  client_id: string
+  parent_type: DocParentType
+  parent_id: string
+  doc_type: DocType
+  file_path: string | null
+  expiry_date: string | null
+  reminder_days_before: number | null
+  uploaded_at: string
+}
+
 export type VolOperator = {
   licence_number: string
   geographic_region: string | null
@@ -55,6 +122,38 @@ export interface Database {
         Row: ClientContact
         Insert: Partial<ClientContact> & Pick<ClientContact, 'client_id' | 'email'>
         Update: Partial<ClientContact>
+        Relationships: []
+      }
+      vehicles: {
+        Row: Vehicle
+        Insert: Partial<Vehicle> & Pick<Vehicle, 'client_id' | 'registration'>
+        Update: Partial<Vehicle>
+        Relationships: []
+      }
+      drivers: {
+        Row: Driver
+        Insert: Partial<Driver> & Pick<Driver, 'client_id' | 'name'>
+        Update: Partial<Driver>
+        Relationships: []
+      }
+      visits: {
+        Row: Visit
+        Insert: Partial<Visit> & Pick<Visit, 'client_id' | 'date'>
+        Update: Partial<Visit>
+        Relationships: []
+      }
+      infringements: {
+        Row: Infringement
+        Insert: Partial<Infringement> &
+          Pick<Infringement, 'client_id' | 'category' | 'type' | 'date'>
+        Update: Partial<Infringement>
+        Relationships: []
+      }
+      documents: {
+        Row: Document
+        Insert: Partial<Document> &
+          Pick<Document, 'client_id' | 'parent_type' | 'parent_id' | 'doc_type'>
+        Update: Partial<Document>
         Relationships: []
       }
       vol_operators: {

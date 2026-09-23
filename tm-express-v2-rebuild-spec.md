@@ -16,11 +16,12 @@ Supersedes the phased v1 spec for the purposes of this rebuild. Simpler, flatter
 
 ## 3. Add Client dialog
 - Text input: OL number or business name
-- As the user types, query DVSA's public operator register (no login required) and show matching results live
+- **Implementation note (as built):** DVSA's interactive VOL search is bot-gated and session-based with no public API — live scraping it from the browser isn't viable. Instead, DVSA's full public register is mirrored locally into a `vol_operators` table via a weekly CSV import (`scripts/import-vol-register.mjs`, run with `npm run import:vol`), published under the Open Government Licence and refreshed every Sunday. As the user types, the dialog searches this local cache instantly rather than querying DVSA live.
 - User selects a result → autofills what the register provides (company name, OL number, registered address, operating centre) directly into a new CompanyPage record
 - Anything the register doesn't provide is left blank for manual entry
 - Vehicles, drivers, visits, and infringements are always added manually afterward on CompanyPage — the VOL register doesn't reliably expose fleet-level detail, so no attempt to autofill those
-- If no VOL match is found, the user can still create the client manually with just a name
+- If no local match is found, the user can still create the client manually with just a name
+- **Maintenance:** re-run `npm run import:vol` roughly weekly to keep the local register in sync with DVSA's Sunday refresh
 
 ## 4. CompanyPage
 - Header: company name, OL number, onboarding status

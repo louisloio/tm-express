@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import chevronRight from '../assets/icon-chevron-right.svg'
 import plusIcon from '../assets/icon-plus.svg'
 import { AddClientDialog } from '../components/AddClientDialog'
+import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
+import { OnboardingBadge } from '../components/OnboardingBadge'
 import { supabase } from '../lib/supabase'
 import type { Client } from '../types/database'
 
@@ -68,27 +71,27 @@ export function Home() {
         ) : (
           <ul>
             {clients.map((client) => (
-              <li
-                key={client.id}
-                className="flex items-center gap-8 border-t border-border-divider bg-bg-row px-6 py-3"
-              >
-                <div className="flex flex-1 flex-col text-[14px] font-semibold tracking-[-0.364px]">
-                  <span className="text-text-primary">{client.company_name}</span>
-                  <span className="font-normal text-text-secondary">
-                    {client.ol_number ?? '—'}
-                  </span>
-                </div>
-                <OnboardingBadge status={client.onboarding_status} />
-                <img src={chevronRight} alt="" className="size-6 shrink-0" />
+              <li key={client.id}>
+                <Link
+                  to={`/clients/${client.id}`}
+                  className="flex items-center gap-8 border-t border-border-divider bg-bg-row px-6 py-3"
+                >
+                  <div className="flex flex-1 flex-col text-[14px] font-semibold tracking-[-0.364px]">
+                    <span className="text-text-primary">{client.company_name}</span>
+                    <span className="font-normal text-text-secondary">
+                      {client.ol_number ?? '—'}
+                    </span>
+                  </div>
+                  <OnboardingBadge status={client.onboarding_status} />
+                  <img src={chevronRight} alt="" className="size-6 shrink-0" />
+                </Link>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      <footer className="flex h-[49px] items-center justify-center border-t border-border-divider px-8 py-4">
-        <p className="text-[14px] text-text-tertiary">© Transport Manager Express</p>
-      </footer>
+      <Footer />
 
       {dialogOpen && (
         <AddClientDialog
@@ -100,18 +103,5 @@ export function Home() {
         />
       )}
     </div>
-  )
-}
-
-function OnboardingBadge({ status }: { status: Client['onboarding_status'] }) {
-  const isApproved = status === 'Approved'
-  return (
-    <span
-      className={`shrink-0 rounded px-1 py-0.5 text-[12px] font-medium tracking-[-0.312px] ${
-        isApproved ? 'bg-success-bg text-success-text' : 'bg-warning-bg text-warning-text'
-      }`}
-    >
-      {status}
-    </span>
   )
 }
