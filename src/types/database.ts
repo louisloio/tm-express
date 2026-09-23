@@ -93,7 +93,13 @@ export type Todo = {
   id: string
   client_id: string
   source_type: TodoSourceType
-  source_id: string
+  // Set for 'infringement' todos; null for 'document' todos (which carry
+  // parent_type/parent_id/doc_type instead — including missing-document
+  // todos, which have no document row to point to).
+  source_id: string | null
+  parent_type: DocParentType | null
+  parent_id: string | null
+  doc_type: DocType | null
   description: string
   status: TodoStatus
   snoozed_until: string | null

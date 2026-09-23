@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { InlineLabel } from '../InlineLabel'
-import { formatDate, getDocStatus } from '../../lib/format'
+import { formatDate, getDocSlotStatus } from '../../lib/format'
 import type { DocType, Document, Driver } from '../../types/database'
 
 interface DriverRowProps {
@@ -13,8 +13,8 @@ interface DriverRowProps {
 export function DriverRow({ clientId, driver, docsByType, infringementCount }: DriverRowProps) {
   const licence = docsByType.get('Licence check')
   const cpc = docsByType.get('CPC')
-  const licenceStatus = getDocStatus(licence?.expiry_date, licence?.reminder_days_before)
-  const cpcStatus = getDocStatus(cpc?.expiry_date, cpc?.reminder_days_before)
+  const licenceStatus = getDocSlotStatus(licence)
+  const cpcStatus = getDocSlotStatus(cpc)
 
   return (
     <Link

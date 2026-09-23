@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Document, Todo } from '../types/database'
+import type { Todo } from '../types/database'
 
 /** Creates any newly-due document/infringement todos. Call before every todo-list read. */
 export async function reconcileTodos(): Promise<void> {
@@ -27,36 +27,28 @@ export interface TodoTarget {
   href: string
 }
 
-/** Resolves each todo's click-through destination (needs the source document for doc-todos). */
-export async function resolveTodoTargets(todos: Todo[]): Promise<Map<string, TodoTarget>> {
+/**
+ * Resolves each todo's click-through destination. Document todos carry
+ * parent_type/parent_id directly (including missing-document todos, which
+ * have no document row to look up), so this is a pure mapping — no fetch.
+ */
+export function resolveTodoTargets(todos: Todo[]): Map<string, TodoTarget> {
   const targets = new Map<string, TodoTarget>()
-  const docIds = todos.filter((t) => t.source_type === 'document').map((t) => t.source_id)
-
-  let docsById = new Map<string, Document>()
-  if (docIds.length > 0) {
-    const { data, error } = await supabase.from('documents').select('*').in('id', docIds)
-    if (error) throw error
-    docsById = new Map((data ?? []).map((d) => [d.id, d]))
-  }
 
   for (const todo of todos) {
+    const base = `/clients/${todo.client_id}`
+
     if (todo.source_type === 'infringement') {
-      targets.set(todo.id, { href: `/clients/${todo.client_id}/infringements/${todo.source_id}` })
+      targets.set(todo.id, { href: `${base}/infringements/${todo.source_id}` })
       continue
     }
 
-    const doc = docsById.get(todo.source_id)
-    if (!doc) {
-      targets.set(todo.id, { href: `/clients/${todo.client_id}` })
-      continue
-    }
-    const base = `/clients/${todo.client_id}`
-    if (doc.parent_type === 'vehicle') {
-      targets.set(todo.id, { href: `${base}/vehicles/${doc.parent_id}` })
-    } else if (doc.parent_type === 'driver') {
-      targets.set(todo.id, { href: `${base}/drivers/${doc.parent_id}` })
-    } else if (doc.parent_type === 'visit') {
-      targets.set(todo.id, { href: `${base}/visits/${doc.parent_id}` })
+    if (todo.parent_type === 'vehicle' && todo.parent_id) {
+      targets.set(todo.id, { href: `${base}/vehicles/${todo.parent_id}` })
+    } else if (todo.parent_type === 'driver' && todo.parent_id) {
+      targets.set(todo.id, { href: `${base}/drivers/${todo.parent_id}` })
+    } else if (todo.parent_type === 'visit' && todo.parent_id) {
+      targets.set(todo.id, { href: `${base}/visits/${todo.parent_id}` })
     } else {
       targets.set(todo.id, { href: base })
     }

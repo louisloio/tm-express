@@ -13,15 +13,18 @@ export function TodoRow({ todo, href, clientName, onChase }: TodoRowProps) {
   const [confirming, setConfirming] = useState(false)
   const [chasing, setChasing] = useState(false)
 
+  const danger = { className: 'border-transparent bg-danger-bg text-danger-text' }
   const badge =
     todo.source_type === 'infringement'
       ? { label: 'Infringement', className: 'border-border-subtle bg-bg-white text-text-primary' }
-      : todo.description.includes('overdue')
-        ? { label: 'Overdue Document', className: 'border-transparent bg-danger-bg text-danger-text' }
-        : {
-            label: 'Approaching Due Date',
-            className: 'border-transparent bg-warning-bg text-warning-text',
-          }
+      : todo.description.includes('missing')
+        ? { label: 'Missing Document', ...danger }
+        : todo.description.includes('overdue')
+          ? { label: 'Overdue Document', ...danger }
+          : {
+              label: 'Approaching Due Date',
+              className: 'border-transparent bg-warning-bg text-warning-text',
+            }
 
   function stop(e: React.MouseEvent) {
     e.preventDefault()

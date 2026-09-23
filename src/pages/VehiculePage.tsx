@@ -7,7 +7,7 @@ import { Header } from '../components/Header'
 import { InlineLabel } from '../components/InlineLabel'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
-import { formatDate, getDocStatus } from '../lib/format'
+import { formatDate, getDocSlotStatus } from '../lib/format'
 import { supabase } from '../lib/supabase'
 import type { Document, Vehicle } from '../types/database'
 
@@ -93,7 +93,7 @@ export function VehiculePage() {
         <div className="flex flex-col gap-1 px-6 pb-4">
           {DOC_TYPES.map((type) => {
             const doc = latestByType.get(type)
-            const status = getDocStatus(doc?.expiry_date, doc?.reminder_days_before)
+            const status = getDocSlotStatus(doc)
             return (
               <InlineLabel
                 key={type}

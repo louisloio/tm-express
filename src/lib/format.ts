@@ -35,3 +35,16 @@ export function getDocStatus(
 
   return 'ok'
 }
+
+/**
+ * Same as getDocStatus, but for a "slot" that might have no document on file
+ * at all (e.g. a vehicle's MOT that's never been uploaded) — treated as
+ * 'overdue', same as an expired one, since a missing compliance document is
+ * at least as urgent.
+ */
+export function getDocSlotStatus(
+  doc: { expiry_date: string | null; reminder_days_before: number | null } | null | undefined,
+): DocStatus {
+  if (!doc) return 'overdue'
+  return getDocStatus(doc.expiry_date, doc.reminder_days_before)
+}

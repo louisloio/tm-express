@@ -46,7 +46,7 @@ export function Home() {
       )
     }
     const openTodos = await fetchOpenTodos()
-    const targets = await resolveTodoTargets(openTodos)
+    const targets = resolveTodoTargets(openTodos)
     setTodos(openTodos)
     setTodoTargets(targets)
   }, [])

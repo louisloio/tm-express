@@ -110,7 +110,7 @@ export function CompanyPage() {
       return
     }
 
-    const todoTargets = await resolveTodoTargets(todos)
+    const todoTargets = resolveTodoTargets(todos)
 
     setData({
       client: clientRes.data,
