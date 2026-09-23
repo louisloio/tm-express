@@ -1,5 +1,13 @@
 export type OnboardingStatus = 'In Progress' | 'Approved'
 
+export type Profile = {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  avatar_url: string | null
+  updated_at: string
+}
+
 export type Client = {
   id: string
   user_id: string
@@ -214,6 +222,12 @@ export interface Database {
         Row: VolOperator
         Insert: Partial<VolOperator> & Pick<VolOperator, 'licence_number' | 'operator_name'>
         Update: Partial<VolOperator>
+        Relationships: []
+      }
+      profiles: {
+        Row: Profile
+        Insert: Partial<Profile> & Pick<Profile, 'id'>
+        Update: Partial<Profile>
         Relationships: []
       }
     }

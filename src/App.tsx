@@ -7,6 +7,7 @@ import { ForgotPassword } from './pages/ForgotPassword'
 import { Home } from './pages/Home'
 import { InfringementPage } from './pages/InfringementPage'
 import { LastVisitPage } from './pages/LastVisitPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { ResetPassword } from './pages/ResetPassword'
 import { SignIn } from './pages/SignIn'
 import { SignUp } from './pages/SignUp'
@@ -52,6 +53,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Home />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
           </ProtectedRoute>
         }
       />
