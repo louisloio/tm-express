@@ -12,16 +12,17 @@ export function SectionTitle({ title, onAdd, addLabel }: SectionTitleProps) {
       <h2 className="flex-1 text-[16px] font-bold tracking-[-0.32px] text-text-primary">
         {title}
       </h2>
-      <button
-        type="button"
-        onClick={onAdd}
-        disabled={!onAdd}
-        aria-label={addLabel ?? `Add to ${title}`}
-        title={onAdd ? addLabel : 'Coming soon'}
-        className="flex items-center justify-center rounded-full border border-border-button p-2 disabled:opacity-40"
-      >
-        <img src={plusIcon} alt="" className="size-6" />
-      </button>
+      {onAdd && (
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-label={addLabel ?? `Add to ${title}`}
+          title={addLabel}
+          className="flex items-center justify-center rounded-full border border-border-button p-2"
+        >
+          <img src={plusIcon} alt="" className="size-6" />
+        </button>
+      )}
     </div>
   )
 }

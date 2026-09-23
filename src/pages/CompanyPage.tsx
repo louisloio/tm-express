@@ -406,7 +406,7 @@ export function CompanyPage() {
         )}
 
         {/* Documents */}
-        <SectionTitle title={`Documents (${documents.length})`} addLabel="Upload document" />
+        <SectionTitle title={`Documents (${documents.length})`} />
         {documents.length === 0 ? (
           <p className="px-6 pb-4 text-[14px] text-text-secondary">No documents uploaded yet.</p>
         ) : (
