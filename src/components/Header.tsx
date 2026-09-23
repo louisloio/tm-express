@@ -10,7 +10,9 @@ export function Header() {
 
   return (
     <header className="flex h-16 w-full items-center justify-between border-b border-border-divider bg-bg-white px-6">
-      <img src={logo} alt="TM Express" className="h-[18px] w-auto" />
+      <Link to="/">
+        <img src={logo} alt="TM Express" className="h-[18px] w-auto" />
+      </Link>
       <Link to="/profile" className="flex items-center gap-2">
         {profile?.avatar_url ? (
           <img
