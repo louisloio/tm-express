@@ -12,8 +12,9 @@
 
 import { resolveUser, serviceClient } from '../_shared/auth.ts'
 import { assertPublicHost } from '../_shared/ssrf_guard.ts'
-import { encryptSecret, decryptSecret } from '../_shared/mailbox_crypto.ts'
+import { decryptSecret } from '../_shared/mailbox_crypto.ts'
 import { sendViaSmtp } from '../_shared/smtp.ts'
+import { upsertMailbox } from '../_shared/mailboxes.ts'
 import { corsHeaders, json } from '../_shared/http.ts'
 
 interface Payload {
@@ -62,11 +63,11 @@ Deno.serve(async (req: Request) => {
   if (!passwordToUse && mailboxId) {
     const { data: existing } = await admin
       .from('mailbox_secrets')
-      .select('encrypted_password, iv')
+      .select('encrypted_secret, iv')
       .eq('mailbox_id', mailboxId)
       .maybeSingle()
     if (!existing) return json({ error: 'Mailbox not found.' }, 404)
-    passwordToUse = await decryptSecret(existing.encrypted_password, existing.iv)
+    passwordToUse = await decryptSecret(existing.encrypted_secret, existing.iv)
   }
   if (!passwordToUse) return json({ error: '"smtpPassword" is required.' }, 400)
 
@@ -96,77 +97,16 @@ Deno.serve(async (req: Request) => {
     return json({ error: err instanceof Error ? err.message : 'Could not verify this mailbox.' }, 502)
   }
 
-  const now = new Date().toISOString()
+  const result = await upsertMailbox(admin, {
+    userId,
+    mailboxId,
+    email,
+    label,
+    provider: 'smtp',
+    smtp: { host: smtpHost, port: smtpPort, secure: !!smtpSecure, username: smtpUsername },
+    secretPlain: passwordToUse,
+  })
+  if ('error' in result) return json({ error: result.error }, result.status)
 
-  if (mailboxId) {
-    const { data: owned } = await admin
-      .from('mailboxes')
-      .select('id')
-      .eq('id', mailboxId)
-      .eq('user_id', userId)
-      .maybeSingle()
-    if (!owned) return json({ error: 'Mailbox not found.' }, 404)
-
-    const { error: updateError } = await admin
-      .from('mailboxes')
-      .update({
-        email,
-        label: label ?? null,
-        smtp_host: smtpHost,
-        smtp_port: smtpPort,
-        smtp_secure: !!smtpSecure,
-        smtp_username: smtpUsername,
-        verified_at: now,
-      })
-      .eq('id', mailboxId)
-    if (updateError) return json({ error: updateError.message }, 500)
-
-    if (smtpPassword) {
-      const { ciphertext, iv } = await encryptSecret(smtpPassword)
-      const { error: secretError } = await admin
-        .from('mailbox_secrets')
-        .update({ encrypted_password: ciphertext, iv })
-        .eq('mailbox_id', mailboxId)
-      if (secretError) return json({ error: secretError.message }, 500)
-    }
-
-    return json({ success: true, id: mailboxId })
-  }
-
-  const { count } = await admin
-    .from('mailboxes')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .is('archived_at', null)
-  const isFirstMailbox = (count ?? 0) === 0
-
-  const { data: inserted, error: insertError } = await admin
-    .from('mailboxes')
-    .insert({
-      user_id: userId,
-      email,
-      label: label ?? null,
-      smtp_host: smtpHost,
-      smtp_port: smtpPort,
-      smtp_secure: !!smtpSecure,
-      smtp_username: smtpUsername,
-      is_default: isFirstMailbox,
-      verified_at: now,
-    })
-    .select('id')
-    .single()
-  if (insertError || !inserted)
-    return json({ error: insertError?.message ?? 'Could not save mailbox.' }, 500)
-
-  const { ciphertext, iv } = await encryptSecret(passwordToUse)
-  const { error: secretError } = await admin
-    .from('mailbox_secrets')
-    .insert({ mailbox_id: inserted.id, encrypted_password: ciphertext, iv })
-  if (secretError) {
-    // Don't leave an orphaned mailbox row with no secret behind it.
-    await admin.from('mailboxes').delete().eq('id', inserted.id)
-    return json({ error: secretError.message }, 500)
-  }
-
-  return json({ success: true, id: inserted.id })
+  return json({ success: true, id: result.id })
 })

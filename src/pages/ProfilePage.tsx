@@ -1,21 +1,35 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AddMailboxDialog } from '../components/AddMailboxDialog'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
+import { MailboxChooserDialog } from '../components/MailboxChooserDialog'
 import { RowMenu } from '../components/RowMenu'
 import { TopSubPage } from '../components/TopSubPage'
 import { useAuth } from '../context/AuthContext'
 import { archiveRow } from '../lib/archive'
+import { startMailboxOAuth } from '../lib/mailboxOAuth'
 import { supabase } from '../lib/supabase'
 import type { Mailbox } from '../types/database'
+
+const PROVIDER_LABEL: Record<Mailbox['provider'], string> = {
+  smtp: 'Mail server',
+  google: 'Gmail',
+  microsoft: 'Microsoft',
+}
 
 export function ProfilePage() {
   const { user, profile, mailboxes, signOut, refreshProfile, refreshMailboxes } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [mailboxDialog, setMailboxDialog] = useState<
     { mode: 'add' } | { mode: 'edit'; mailbox: Mailbox } | null
+  >(null)
+  const [chooserOpen, setChooserOpen] = useState(false)
+  const [connectingProvider, setConnectingProvider] = useState<'google' | 'microsoft' | null>(null)
+  const [mailboxMessage, setMailboxMessage] = useState<
+    { type: 'success' | 'error'; text: string } | null
   >(null)
 
   const [firstName, setFirstName] = useState('')
@@ -41,6 +55,33 @@ export function ProfilePage() {
       setInitialized(true)
     }
   }, [profile, initialized])
+
+  // Landing back here after the Gmail/Microsoft OAuth redirect — surface
+  // the result once, then strip the query params so a refresh doesn't
+  // re-trigger the message.
+  useEffect(() => {
+    const connected = searchParams.get('connected')
+    const oauthError = searchParams.get('oauth_error')
+    if (!connected && !oauthError) return
+
+    if (connected) {
+      setMailboxMessage({
+        type: 'success',
+        text: `${PROVIDER_LABEL[connected as Mailbox['provider']] ?? connected} connected.`,
+      })
+      void refreshMailboxes()
+    } else if (oauthError) {
+      setMailboxMessage({ type: 'error', text: oauthError })
+    }
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('connected')
+      next.delete('oauth_error')
+      return next
+    }, { replace: true })
+    // Deliberately run once on mount only — this consumes the OAuth
+    // redirect's query params, not something to re-run on every render.
+  }, [])
 
   if (!user) return null
 
@@ -107,6 +148,17 @@ export function ProfilePage() {
   async function handleArchiveMailbox(id: string) {
     await archiveRow('mailboxes', id)
     void refreshMailboxes()
+  }
+
+  async function handleChooseOAuth(provider: 'google' | 'microsoft', mailboxId?: string) {
+    setConnectingProvider(provider)
+    const { error } = await startMailboxOAuth(provider, mailboxId)
+    if (error) {
+      setConnectingProvider(null)
+      setMailboxMessage({ type: 'error', text: error })
+    }
+    // On success the browser is already navigating away — no need to
+    // reset connectingProvider, this component is about to unmount.
   }
 
   return (
@@ -188,16 +240,24 @@ export function ProfilePage() {
             <h2 className="text-[16px] font-semibold text-text-primary">Connected mailboxes</h2>
             <button
               type="button"
-              onClick={() => setMailboxDialog({ mode: 'add' })}
+              onClick={() => setChooserOpen(true)}
               className="text-[14px] font-medium text-[#0060e3]"
             >
               + Add mailbox
             </button>
           </div>
           <p className="mb-3 text-[13px] text-text-secondary">
-            Chase emails are sent literally from one of these addresses via your own mail server —
-            no shared sender, no Reply-To trick.
+            Chase emails are sent literally from one of these addresses — no shared sender, no
+            Reply-To trick.
           </p>
+
+          {mailboxMessage && (
+            <p
+              className={`mb-3 text-[14px] ${mailboxMessage.type === 'error' ? 'text-danger-text' : 'text-success-text'}`}
+            >
+              {mailboxMessage.text}
+            </p>
+          )}
 
           {mailboxes.length === 0 ? (
             <p className="rounded-lg border border-border-subtle bg-bg-row px-4 py-3 text-[14px] text-text-secondary">
@@ -220,22 +280,50 @@ export function ProfilePage() {
                           Default
                         </span>
                       )}
+                      {mailbox.provider !== 'smtp' && (
+                        <span className="rounded border border-border-subtle bg-bg-row px-1 py-0.5 text-[11px] font-medium text-text-secondary">
+                          {PROVIDER_LABEL[mailbox.provider]}
+                        </span>
+                      )}
+                      {mailbox.needs_reauth && (
+                        <span className="rounded border border-transparent bg-danger-bg px-1 py-0.5 text-[11px] font-medium text-danger-text">
+                          Needs reconnect
+                        </span>
+                      )}
                     </div>
                     {mailbox.label && (
                       <span className="text-[13px] text-text-secondary">{mailbox.email}</span>
                     )}
-                    {!mailbox.is_default && (
-                      <button
-                        type="button"
-                        onClick={() => handleSetDefault(mailbox.id)}
-                        className="w-fit text-[12px] font-medium text-[#0060e3]"
-                      >
-                        Set as default
-                      </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {!mailbox.is_default && (
+                        <button
+                          type="button"
+                          onClick={() => handleSetDefault(mailbox.id)}
+                          className="w-fit text-[12px] font-medium text-[#0060e3]"
+                        >
+                          Set as default
+                        </button>
+                      )}
+                      {mailbox.needs_reauth && mailbox.provider !== 'smtp' && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleChooseOAuth(mailbox.provider as 'google' | 'microsoft', mailbox.id)
+                          }
+                          disabled={!!connectingProvider}
+                          className="w-fit text-[12px] font-medium text-danger-text disabled:opacity-60"
+                        >
+                          {connectingProvider === mailbox.provider ? 'Connecting…' : 'Reconnect'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <RowMenu
-                    onEdit={() => setMailboxDialog({ mode: 'edit', mailbox })}
+                    onEdit={
+                      mailbox.provider === 'smtp'
+                        ? () => setMailboxDialog({ mode: 'edit', mailbox })
+                        : undefined
+                    }
                     onArchive={() => handleArchiveMailbox(mailbox.id)}
                     archiveLabel="Disconnect"
                   />
@@ -253,6 +341,18 @@ export function ProfilePage() {
           Sign out
         </button>
       </div>
+
+      {chooserOpen && (
+        <MailboxChooserDialog
+          onClose={() => setChooserOpen(false)}
+          onChooseOAuth={(provider) => handleChooseOAuth(provider)}
+          onChooseManual={() => {
+            setChooserOpen(false)
+            setMailboxDialog({ mode: 'add' })
+          }}
+          connecting={connectingProvider}
+        />
+      )}
 
       {mailboxDialog && (
         <AddMailboxDialog

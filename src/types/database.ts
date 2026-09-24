@@ -8,16 +8,20 @@ export type Profile = {
   updated_at: string
 }
 
+export type MailboxProvider = 'smtp' | 'google' | 'microsoft'
+
 export type Mailbox = {
   id: string
   user_id: string
   email: string
   label: string | null
-  smtp_host: string
-  smtp_port: number
+  provider: MailboxProvider
+  smtp_host: string | null
+  smtp_port: number | null
   smtp_secure: boolean
-  smtp_username: string
+  smtp_username: string | null
   is_default: boolean
+  needs_reauth: boolean
   verified_at: string | null
   created_at: string
   archived_at: string | null
