@@ -18,9 +18,9 @@ export function SectionTitle({ title, onAdd, addLabel }: SectionTitleProps) {
           onClick={onAdd}
           aria-label={addLabel ?? `Add to ${title}`}
           title={addLabel}
-          className="flex items-center justify-center rounded-full border border-border-button p-2"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border-button"
         >
-          <img src={plusIcon} alt="" className="size-6" />
+          <img src={plusIcon} alt="" className="size-3.5" />
         </button>
       )}
     </div>
