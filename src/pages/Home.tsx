@@ -92,10 +92,9 @@ export function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
-      <Header />
-
-      <div className="mx-auto flex w-full max-w-[600px] flex-1 flex-col">
-        <div className="flex bg-bg-white">
+      <div className="sticky top-0 z-20">
+        <Header />
+        <div className="mx-auto flex w-full max-w-[600px] bg-bg-white">
           <TabButton active={tab === 'dashboard'} onClick={() => setTab('dashboard')}>
             Dashboard
           </TabButton>
@@ -103,7 +102,9 @@ export function Home() {
             Todo{todos.length > 0 ? ` (${todos.length})` : ''}
           </TabButton>
         </div>
+      </div>
 
+      <div className="mx-auto flex w-full max-w-[600px] flex-1 flex-col">
         {tab === 'dashboard' ? (
           <>
             <div className="flex items-center gap-8 px-6 pt-6">
