@@ -1,6 +1,6 @@
 interface MailboxChooserDialogProps {
   onClose: () => void
-  onChooseOAuth: (provider: 'google' | 'microsoft') => void
+  onChooseOAuth: (provider: 'google') => void
   onChooseManual: () => void
   connecting: 'google' | 'microsoft' | null
 }
@@ -34,14 +34,6 @@ export function MailboxChooserDialog({
             className="flex items-center justify-center gap-2 rounded-lg border border-border-button bg-bg-white px-6 py-3 text-[15px] font-medium text-text-primary disabled:opacity-60"
           >
             {connecting === 'google' ? 'Connecting…' : 'Connect Gmail'}
-          </button>
-          <button
-            type="button"
-            onClick={() => onChooseOAuth('microsoft')}
-            disabled={!!connecting}
-            className="flex items-center justify-center gap-2 rounded-lg border border-border-button bg-bg-white px-6 py-3 text-[15px] font-medium text-text-primary disabled:opacity-60"
-          >
-            {connecting === 'microsoft' ? 'Connecting…' : 'Connect Microsoft'}
           </button>
 
           <div className="flex items-center gap-3 py-1">
