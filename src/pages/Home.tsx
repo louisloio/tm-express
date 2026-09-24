@@ -116,7 +116,7 @@ export function Home() {
                 aria-label="Add client"
                 className="flex items-center justify-center rounded-full border border-border-button p-2"
               >
-                <img src={plusIcon} alt="" className="size-6" />
+                <img src={plusIcon} alt="" className="size-3.5" />
               </button>
             </div>
 
