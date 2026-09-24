@@ -114,7 +114,7 @@ export function Home() {
                 type="button"
                 onClick={() => setDialogOpen(true)}
                 aria-label="Add client"
-                className="flex items-center justify-center rounded-full border border-border-button p-2"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border-button"
               >
                 <img src={plusIcon} alt="" className="size-3.5" />
               </button>
