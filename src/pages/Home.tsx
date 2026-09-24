@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import chevronRight from '../assets/icon-chevron-right.svg'
 import plusIcon from '../assets/icon-plus.svg'
 import { AddClientDialog } from '../components/AddClientDialog'
 import { TodoRow } from '../components/company/TodoRow'
@@ -151,7 +150,6 @@ export function Home() {
                         </span>
                       </div>
                       <OnboardingBadge status={client.onboarding_status} />
-                      <img src={chevronRight} alt="" className="size-6 shrink-0" />
                     </Link>
                     <RowMenu
                       onEdit={() => setEditingClient(client)}
