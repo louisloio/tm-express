@@ -275,7 +275,8 @@ export function CompanyPage() {
                 <a
                   key={c.id}
                   href={`mailto:${c.email}`}
-                  className="text-[14px] font-medium text-[#0060e3]"
+                  title={c.email}
+                  className="block truncate text-[14px] font-medium text-[#0060e3]"
                 >
                   {c.email}
                 </a>
