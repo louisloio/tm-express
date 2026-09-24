@@ -7,6 +7,7 @@ import { ForgotPassword } from './pages/ForgotPassword'
 import { Home } from './pages/Home'
 import { InfringementPage } from './pages/InfringementPage'
 import { LastVisitPage } from './pages/LastVisitPage'
+import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { ResetPassword } from './pages/ResetPassword'
 import { SignIn } from './pages/SignIn'
@@ -61,6 +62,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/oauth/:provider/callback"
+        element={
+          <ProtectedRoute>
+            <OAuthCallbackPage />
           </ProtectedRoute>
         }
       />
