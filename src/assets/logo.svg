@@ -7,9 +7,9 @@
 <ellipse cx="45.6144" cy="13.4409" rx="30" ry="24.5" transform="rotate(-57.192 45.6144 13.4409)" fill="url(#paint2_linear_64_3290)"/>
 </g>
 <defs>
-<linearGradient id="paint0_linear_64_3290" x1="0" y1="11.7886" x2="79.4082" y2="11.7886" gradientUnits="userSpaceOnUse">
-<stop stop-color="#FE5E97"/>
-<stop offset="1" stop-color="#18038A"/>
+<linearGradient id="paint0_linear_64_3290" x1="-6.61735" y1="9.87949" x2="67.497" y2="9.87949" gradientUnits="userSpaceOnUse">
+<stop stop-color="#D7EBFB"/>
+<stop offset="1" stop-color="#0B4F80"/>
 </linearGradient>
 <linearGradient id="paint1_linear_64_3290" x1="-11.5304" y1="3.68571" x2="74.269" y2="3.68571" gradientUnits="userSpaceOnUse">
 <stop stop-color="#D7EBFB"/>
