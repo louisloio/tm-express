@@ -228,7 +228,6 @@ export function CompanyPage() {
 
   const vehicleDocs = latestDocsByParent(documents.filter((d) => d.parent_type === 'vehicle'))
   const driverDocs = latestDocsByParent(documents.filter((d) => d.parent_type === 'driver'))
-  const documentTodos = todos.filter((t) => t.source_type === 'document')
 
   const vehiclesById = new Map(vehicles.map((v) => [v.id, v]))
   const driversById = new Map(drivers.map((d) => [d.id, d]))
@@ -299,7 +298,7 @@ export function CompanyPage() {
         <SectionTitle
           title={`Todo (${todos.length})`}
           trailing={
-            documentTodos.length > 0 ? (
+            todos.length > 0 ? (
               <button
                 type="button"
                 onClick={() => setDialog({ type: 'chase-all' })}

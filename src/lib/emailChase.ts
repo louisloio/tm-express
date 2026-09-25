@@ -1,7 +1,100 @@
 import { supabase } from './supabase'
+import { formatDate } from './format'
 import type { EmailChaseScope, Todo } from '../types/database'
 
-export function buildSingleTodoTemplate(todo: Todo, clientName: string) {
+export interface InfringementDetail {
+  category: string
+  type: string
+  date: string
+  notes: string | null
+  driverName: string | null
+  vehicleRegistration: string | null
+}
+
+/** Loads everything worth quoting in a chase for the infringement todos among `todos`, keyed by todo id. */
+export async function fetchInfringementDetails(
+  todos: Todo[],
+): Promise<Map<string, InfringementDetail>> {
+  const result = new Map<string, InfringementDetail>()
+  const withSource = todos.filter((t) => t.source_type === 'infringement' && t.source_id)
+  if (withSource.length === 0) return result
+
+  const { data: infringements } = await supabase
+    .from('infringements')
+    .select('*')
+    .in(
+      'id',
+      withSource.map((t) => t.source_id as string),
+    )
+  const rows = infringements ?? []
+
+  const driverIds = [...new Set(rows.map((i) => i.driver_id).filter(Boolean))] as string[]
+  const vehicleIds = [...new Set(rows.map((i) => i.vehicle_id).filter(Boolean))] as string[]
+  const [driversRes, vehiclesRes] = await Promise.all([
+    driverIds.length
+      ? supabase.from('drivers').select('id, name').in('id', driverIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+    vehicleIds.length
+      ? supabase.from('vehicles').select('id, registration').in('id', vehicleIds)
+      : Promise.resolve({ data: [] as { id: string; registration: string }[] }),
+  ])
+  const drivers = new Map((driversRes.data ?? []).map((d) => [d.id, d.name]))
+  const vehicles = new Map((vehiclesRes.data ?? []).map((v) => [v.id, v.registration]))
+
+  for (const todo of withSource) {
+    const inf = rows.find((i) => i.id === todo.source_id)
+    if (!inf) continue
+    result.set(todo.id, {
+      category: inf.category,
+      type: inf.type,
+      date: inf.date,
+      notes: inf.notes,
+      driverName: inf.driver_id ? (drivers.get(inf.driver_id) ?? null) : null,
+      vehicleRegistration: inf.vehicle_id ? (vehicles.get(inf.vehicle_id) ?? null) : null,
+    })
+  }
+  return result
+}
+
+const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim()
+
+function infringementFacts(d: InfringementDetail): string[] {
+  const facts = [`Category: ${d.category}`, `Type: ${d.type}`, `Date: ${formatDate(d.date)}`]
+  if (d.driverName) facts.push(`Driver: ${d.driverName}`)
+  if (d.vehicleRegistration) facts.push(`Vehicle: ${d.vehicleRegistration}`)
+  facts.push('Status: Unresolved')
+  if (d.notes?.trim()) facts.push(`Notes: ${oneLine(d.notes)}`)
+  return facts
+}
+
+function infringementSummary(d: InfringementDetail): string {
+  const parts = [`${d.type} (${d.category})`, formatDate(d.date)]
+  if (d.driverName) parts.push(`driver ${d.driverName}`)
+  if (d.vehicleRegistration) parts.push(`vehicle ${d.vehicleRegistration}`)
+  const notes = d.notes?.trim() ? ` — notes: ${oneLine(d.notes)}` : ''
+  return `Unresolved infringement: ${parts.join(', ')}${notes}`
+}
+
+export function buildSingleTodoTemplate(
+  todo: Todo,
+  clientName: string,
+  infringement?: InfringementDetail,
+) {
+  if (todo.source_type === 'infringement' && infringement) {
+    const subject = `[TM Express] Unresolved infringement: ${infringement.type}`
+    const body = `Dear ${clientName},
+
+Our records show the following infringement is still unresolved and requires your attention:
+
+${infringementFacts(infringement).join('\n')}
+
+Please let us know what action has been taken, or is planned, to resolve it, and send over any supporting evidence.
+
+Thanks,
+Transport Manager`
+    return { subject, body }
+  }
+
   const subject = `[TM Express] Action needed: ${todo.description}`
   const body = `Dear ${clientName},
 
@@ -16,11 +109,20 @@ Transport Manager`
   return { subject, body }
 }
 
-export function buildAllOutstandingTemplate(todos: Todo[], clientName: string) {
+export function buildAllOutstandingTemplate(
+  todos: Todo[],
+  clientName: string,
+  infringements?: Map<string, InfringementDetail>,
+) {
   const subject = `[TM Express] ${todos.length} outstanding compliance item${
     todos.length === 1 ? '' : 's'
   } for ${clientName}`
-  const items = todos.map((t) => `- ${t.description}`).join('\n')
+  const items = todos
+    .map((t) => {
+      const detail = infringements?.get(t.id)
+      return `- ${detail ? infringementSummary(detail) : t.description}`
+    })
+    .join('\n')
   const body = `Dear ${clientName},
 
 Our records show the following outstanding compliance items require your attention:
@@ -65,6 +167,16 @@ export function renderChaseEmailHtml(bodyText: string): string {
         .map((l) => l.trim())
         .filter(Boolean)
       const isList = lines.length > 0 && lines.every((l) => l.startsWith('- '))
+      const facts = lines.map((l) => /^([A-Z][A-Za-z ]{1,20}): (.+)$/.exec(l))
+      if (lines.length >= 3 && facts.every(Boolean)) {
+        const rows = facts
+          .map(
+            (m) =>
+              `<tr><td style="padding:6px 12px 6px 0;color:#6c6c70;font-size:14px;vertical-align:top;white-space:nowrap;">${escapeHtml(m![1])}</td><td style="padding:6px 0;color:#1c1c1e;font-size:15px;font-weight:500;">${escapeHtml(m![2])}</td></tr>`,
+          )
+          .join('')
+        return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 16px;background:#f2f2f7;border-radius:10px;"><tr><td style="padding:10px 16px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0">${rows}</table></td></tr></table>`
+      }
       if (isList) {
         const items = lines
           .map((l) => `<li style="margin-bottom:8px;">${escapeHtml(l.slice(2))}</li>`)

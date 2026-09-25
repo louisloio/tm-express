@@ -42,17 +42,15 @@ export function TodoRow({ todo, href, clientName, onOpenChase }: TodoRowProps) {
         </span>
         {clientName && <span className="text-[15px] text-text-secondary">{clientName}</span>}
       </div>
-      {todo.source_type === 'document' && (
-        <button
-          type="button"
-          onClick={handleChaseClick}
-          title="Chase"
-          aria-label="Chase"
-          className="ios-icon-btn"
-        >
-          <EnvelopeIcon />
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={handleChaseClick}
+        title="Chase"
+        aria-label="Chase"
+        className="ios-icon-btn"
+      >
+        <EnvelopeIcon />
+      </button>
     </Link>
   )
 }

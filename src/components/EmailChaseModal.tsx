@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   buildAllOutstandingTemplate,
   buildSingleTodoTemplate,
+  fetchInfringementDetails,
+  type InfringementDetail,
   recordChase,
   sendChaseEmail,
 } from '../lib/emailChase'
@@ -20,7 +22,11 @@ interface EmailChaseModalProps {
   onSent: () => void
 }
 
-export function EmailChaseModal({
+interface ChaseFormProps extends EmailChaseModalProps {
+  infringements: Map<string, InfringementDetail>
+}
+
+function ChaseForm({
   clientId,
   clientName,
   contacts,
@@ -29,13 +35,14 @@ export function EmailChaseModal({
   todos,
   onClose,
   onSent,
-}: EmailChaseModalProps) {
+  infringements,
+}: ChaseFormProps) {
   const { mailboxes } = useAuth()
 
   const template =
     scope === 'single_todo' && todo
-      ? buildSingleTodoTemplate(todo, clientName)
-      : buildAllOutstandingTemplate(todos ?? [], clientName)
+      ? buildSingleTodoTemplate(todo, clientName, infringements.get(todo.id))
+      : buildAllOutstandingTemplate(todos ?? [], clientName, infringements)
 
   const defaultMailbox = mailboxes.find((m) => m.is_default) ?? mailboxes[0]
   const [mailboxId, setMailboxId] = useState(defaultMailbox?.id ?? '')
@@ -208,4 +215,37 @@ export function EmailChaseModal({
       </div>
     </div>
   )
+}
+
+/** Loads infringement details (if any are being chased) before showing the form, so the templates can quote them. */
+export function EmailChaseModal(props: EmailChaseModalProps) {
+  const [infringements, setInfringements] = useState<Map<string, InfringementDetail> | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const list = props.scope === 'single_todo' && props.todo ? [props.todo] : (props.todos ?? [])
+    fetchInfringementDetails(list)
+      .catch(() => new Map<string, InfringementDetail>())
+      .then((details) => {
+        if (!cancelled) setInfringements(details)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  if (!infringements) {
+    return (
+      <div className="ios-backdrop">
+        <div className="ios-sheet">
+          <div className="ios-sheet-header">
+            <h2 className="ios-sheet-title">Chase</h2>
+          </div>
+          <p className="px-5 pb-8 pt-3 text-[15px] text-text-secondary">Loading…</p>
+        </div>
+      </div>
+    )
+  }
+  return <ChaseForm {...props} infringements={infringements} />
 }
