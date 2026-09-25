@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Logo } from '../components/Logo'
+import logo from '../assets/logo.svg'
 import { useAuth } from '../context/AuthContext'
 
 export function SignUp() {
@@ -27,7 +27,7 @@ export function SignUp() {
   if (done) {
     return (
       <div className="flex min-h-screen flex-col items-center bg-bg-app pt-[calc(env(safe-area-inset-top)+64px)]">
-        <Logo className="h-[26px] w-auto text-text-primary" />
+        <img src={logo} alt="TM Express" className="h-[26px] w-auto" />
         <div className="mt-12 w-full max-w-[420px] px-4 py-6 text-center">
           <p className="text-[17px] text-text-primary">
             Check <strong>{email}</strong> to confirm your account, then sign in.
@@ -42,7 +42,7 @@ export function SignUp() {
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-bg-app pt-[calc(env(safe-area-inset-top)+64px)]">
-      <Logo className="h-[26px] w-auto text-text-primary" />
+      <img src={logo} alt="TM Express" className="h-[26px] w-auto" />
       <form onSubmit={handleSubmit} className="flex w-full max-w-[420px] flex-col px-4 py-8">
         <div className="ios-group !mx-0">
           <label className="ios-row-field">
