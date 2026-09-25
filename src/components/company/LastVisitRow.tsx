@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { InlineLabel } from '../InlineLabel'
-import { RowMenu } from '../RowMenu'
+import { EditButton } from '../EditButton'
 import { formatDate } from '../../lib/format'
 import type { Visit } from '../../types/database'
 
@@ -8,10 +8,9 @@ interface LastVisitRowProps {
   clientId: string
   visit: Visit
   onEdit: () => void
-  onArchive: () => Promise<void>
 }
 
-export function LastVisitRow({ clientId, visit, onEdit, onArchive }: LastVisitRowProps) {
+export function LastVisitRow({ clientId, visit, onEdit }: LastVisitRowProps) {
   return (
     <div className="flex items-start gap-1 py-3 pl-4 pr-1">
       <Link
@@ -24,7 +23,7 @@ export function LastVisitRow({ clientId, visit, onEdit, onArchive }: LastVisitRo
           <InlineLabel label="Notes" value={visit.notes || '—'} />
         </div>
       </Link>
-      <RowMenu onEdit={onEdit} onArchive={onArchive} archiveLabel="Archive visit" />
+      <EditButton onClick={onEdit} label="Edit" className="-mt-0.5 !text-[15px]" />
     </div>
   )
 }

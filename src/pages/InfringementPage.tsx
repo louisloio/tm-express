@@ -143,13 +143,7 @@ export function InfringementPage() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg-app">
-      <TopSubPage
-        backTo={backTo}
-        title={infringement.type}
-        onEdit={() => setEditOpen(true)}
-        onArchive={handleArchive}
-        archiveLabel="Archive infringement"
-      />
+      <TopSubPage backTo={backTo} title={infringement.type} onEdit={() => setEditOpen(true)} />
 
       <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
         <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px]">
@@ -221,6 +215,7 @@ export function InfringementPage() {
       )}
       {editOpen && clientId && (
         <AddInfringementDialog
+          onArchive={handleArchive}
           clientId={clientId}
           drivers={clientDrivers}
           vehicles={clientVehicles}

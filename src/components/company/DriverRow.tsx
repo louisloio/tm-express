@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { InlineLabel } from '../InlineLabel'
-import { RowMenu } from '../RowMenu'
+import { EditButton } from '../EditButton'
 import { formatDate, getDocSlotStatus } from '../../lib/format'
 import type { DocType, Document, Driver } from '../../types/database'
 
@@ -10,7 +10,6 @@ interface DriverRowProps {
   docsByType: Map<DocType, Document>
   infringementCount: number
   onEdit: () => void
-  onArchive: () => Promise<void>
 }
 
 export function DriverRow({
@@ -19,7 +18,6 @@ export function DriverRow({
   docsByType,
   infringementCount,
   onEdit,
-  onArchive,
 }: DriverRowProps) {
   const licence = docsByType.get('Licence check')
   const cpc = docsByType.get('CPC')
@@ -50,7 +48,7 @@ export function DriverRow({
           <InlineLabel label="Infringements" value={String(infringementCount)} />
         </div>
       </Link>
-      <RowMenu onEdit={onEdit} onArchive={onArchive} archiveLabel="Archive driver" />
+      <EditButton onClick={onEdit} label="Edit" className="-mt-0.5 !text-[15px]" />
     </div>
   )
 }

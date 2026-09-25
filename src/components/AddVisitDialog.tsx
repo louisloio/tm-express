@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { ArchiveButton } from './ArchiveButton'
 import { supabase } from '../lib/supabase'
 import type { Visit } from '../types/database'
 
@@ -6,6 +7,8 @@ interface AddVisitDialogProps {
   clientId: string
   visit?: Visit
   onClose: () => void
+  /** Shown as a destructive button at the end of the form when editing. */
+  onArchive?: () => Promise<void>
   onCreated: () => void
 }
 
@@ -13,7 +16,13 @@ function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function AddVisitDialog({ clientId, visit, onClose, onCreated }: AddVisitDialogProps) {
+export function AddVisitDialog({
+  clientId,
+  visit,
+  onClose,
+  onArchive,
+  onCreated,
+}: AddVisitDialogProps) {
   const isEditing = !!visit
   const [date, setDate] = useState(visit?.date ?? today())
   const [notes, setNotes] = useState(visit?.notes ?? '')
@@ -87,6 +96,7 @@ export function AddVisitDialog({ clientId, visit, onClose, onCreated }: AddVisit
               {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Log visit'}
             </button>
           </div>
+          {onArchive && <ArchiveButton label="Archive visit" onArchive={onArchive} />}
         </form>
       </div>
     </div>

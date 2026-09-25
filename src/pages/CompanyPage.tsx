@@ -266,8 +266,6 @@ export function CompanyPage() {
         backTo="/"
         title={client.company_name}
         onEdit={() => setDialog({ type: 'client-edit' })}
-        onArchive={handleArchiveClient}
-        archiveLabel="Archive client"
       />
 
       <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
@@ -344,7 +342,6 @@ export function CompanyPage() {
                 vehicle={v}
                 docsByType={vehicleDocs.get(v.id) ?? new Map()}
                 onEdit={() => setDialog({ type: 'vehicle', vehicle: v })}
-                onArchive={() => handleArchiveVehicle(v.id)}
               />
             ))}
           </div>
@@ -368,7 +365,6 @@ export function CompanyPage() {
                 docsByType={driverDocs.get(d.id) ?? new Map()}
                 infringementCount={infringementCountByDriver.get(d.id) ?? 0}
                 onEdit={() => setDialog({ type: 'driver', driver: d })}
-                onArchive={() => handleArchiveDriver(d.id)}
               />
             ))}
           </div>
@@ -386,7 +382,6 @@ export function CompanyPage() {
               clientId={client.id}
               visit={latestVisit}
               onEdit={() => setDialog({ type: 'visit', visit: latestVisit })}
-              onArchive={() => handleArchiveVisit(latestVisit.id)}
             />
           </div>
         ) : (
@@ -410,7 +405,6 @@ export function CompanyPage() {
                 infringement={inf}
                 linkedTo={linkedToLabel(inf)}
                 onEdit={() => setDialog({ type: 'infringement', infringement: inf })}
-                onArchive={() => handleArchiveInfringement(inf.id)}
               />
             ))}
           </div>
@@ -439,6 +433,7 @@ export function CompanyPage() {
       {dialog?.type === 'client-edit' && (
         <EditClientDialog
           client={client}
+          onArchive={handleArchiveClient}
           onClose={() => setDialog(null)}
           onSaved={() => {
             setDialog(null)
@@ -450,6 +445,14 @@ export function CompanyPage() {
         <AddVehicleDialog
           clientId={client.id}
           vehicle={dialog.vehicle}
+          onArchive={
+            dialog.vehicle
+              ? async () => {
+                  await handleArchiveVehicle(dialog.vehicle!.id)
+                  setDialog(null)
+                }
+              : undefined
+          }
           onClose={() => setDialog(null)}
           onCreated={() => {
             setDialog(null)
@@ -461,6 +464,14 @@ export function CompanyPage() {
         <AddDriverDialog
           clientId={client.id}
           driver={dialog.driver}
+          onArchive={
+            dialog.driver
+              ? async () => {
+                  await handleArchiveDriver(dialog.driver!.id)
+                  setDialog(null)
+                }
+              : undefined
+          }
           onClose={() => setDialog(null)}
           onCreated={() => {
             setDialog(null)
@@ -472,6 +483,14 @@ export function CompanyPage() {
         <AddVisitDialog
           clientId={client.id}
           visit={dialog.visit}
+          onArchive={
+            dialog.visit
+              ? async () => {
+                  await handleArchiveVisit(dialog.visit!.id)
+                  setDialog(null)
+                }
+              : undefined
+          }
           onClose={() => setDialog(null)}
           onCreated={() => {
             setDialog(null)
@@ -485,6 +504,14 @@ export function CompanyPage() {
           drivers={drivers}
           vehicles={vehicles}
           infringement={dialog.infringement}
+          onArchive={
+            dialog.infringement
+              ? async () => {
+                  await handleArchiveInfringement(dialog.infringement!.id)
+                  setDialog(null)
+                }
+              : undefined
+          }
           onClose={() => setDialog(null)}
           onCreated={() => {
             setDialog(null)

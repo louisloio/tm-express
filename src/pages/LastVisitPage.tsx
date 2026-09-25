@@ -74,8 +74,6 @@ export function LastVisitPage() {
         backTo={backTo}
         title={`Visit — ${formatDate(visit.date)}`}
         onEdit={() => setEditOpen(true)}
-        onArchive={handleArchiveVisit}
-        archiveLabel="Archive visit"
       />
 
       <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
@@ -92,6 +90,7 @@ export function LastVisitPage() {
 
       {editOpen && clientId && (
         <AddVisitDialog
+          onArchive={handleArchiveVisit}
           clientId={clientId}
           visit={visit}
           onClose={() => setEditOpen(false)}

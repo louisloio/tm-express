@@ -8,7 +8,7 @@ import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { PlusIcon } from '../components/icons'
 import { OnboardingBadge } from '../components/OnboardingBadge'
-import { RowMenu } from '../components/RowMenu'
+import { EditButton } from '../components/EditButton'
 import { archiveRow } from '../lib/archive'
 import { onDataChanged } from '../lib/dataEvents'
 import { supabase } from '../lib/supabase'
@@ -172,11 +172,7 @@ export function Home() {
                       </div>
                       <OnboardingBadge status={client.onboarding_status} />
                     </Link>
-                    <RowMenu
-                      onEdit={() => setEditingClient(client)}
-                      onArchive={() => handleArchiveClient(client.id)}
-                      archiveLabel="Archive client"
-                    />
+                    <EditButton onClick={() => setEditingClient(client)} className="!text-[15px]" />
                   </li>
                 ))}
               </ul>
@@ -225,6 +221,10 @@ export function Home() {
       {editingClient && (
         <EditClientDialog
           client={editingClient}
+          onArchive={async () => {
+            await handleArchiveClient(editingClient.id)
+            setEditingClient(null)
+          }}
           onClose={() => setEditingClient(null)}
           onSaved={() => {
             setEditingClient(null)

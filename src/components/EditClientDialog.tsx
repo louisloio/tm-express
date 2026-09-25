@@ -1,10 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { ArchiveButton } from './ArchiveButton'
 import { supabase } from '../lib/supabase'
 import type { Client, OnboardingStatus } from '../types/database'
 
 interface EditClientDialogProps {
   client: Client
   onClose: () => void
+  /** Shown as a destructive button at the end of the form when editing. */
+  onArchive?: () => Promise<void>
   onSaved: () => void
 }
 
@@ -14,7 +17,7 @@ interface ContactRow {
   email: string
 }
 
-export function EditClientDialog({ client, onClose, onSaved }: EditClientDialogProps) {
+export function EditClientDialog({ client, onClose, onArchive, onSaved }: EditClientDialogProps) {
   const [companyName, setCompanyName] = useState(client.company_name)
   const [olNumber, setOlNumber] = useState(client.ol_number ?? '')
   const [address, setAddress] = useState(client.address ?? '')
@@ -266,6 +269,7 @@ export function EditClientDialog({ client, onClose, onSaved }: EditClientDialogP
               {submitting ? 'Saving…' : 'Save changes'}
             </button>
           </div>
+          {onArchive && <ArchiveButton label="Archive client" onArchive={onArchive} />}
         </form>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { ArchiveButton } from './ArchiveButton'
 import { INFRINGEMENT_CATEGORIES, INFRINGEMENT_TAXONOMY } from '../lib/infringements'
 import { supabase } from '../lib/supabase'
 import type { Driver, Infringement, InfringementCategory, Vehicle } from '../types/database'
@@ -9,6 +10,8 @@ interface AddInfringementDialogProps {
   vehicles: Vehicle[]
   infringement?: Infringement
   onClose: () => void
+  /** Shown as a destructive button at the end of the form when editing. */
+  onArchive?: () => Promise<void>
   onCreated: () => void
 }
 
@@ -22,6 +25,7 @@ export function AddInfringementDialog({
   vehicles,
   infringement,
   onClose,
+  onArchive,
   onCreated,
 }: AddInfringementDialogProps) {
   const isEditing = !!infringement
@@ -204,6 +208,7 @@ export function AddInfringementDialog({
               {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Log infringement'}
             </button>
           </div>
+          {onArchive && <ArchiveButton label="Archive infringement" onArchive={onArchive} />}
         </form>
       </div>
     </div>

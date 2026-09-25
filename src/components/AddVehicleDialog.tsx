@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { ArchiveButton } from './ArchiveButton'
 import { supabase } from '../lib/supabase'
 import type { Vehicle } from '../types/database'
 
@@ -6,10 +7,18 @@ interface AddVehicleDialogProps {
   clientId: string
   vehicle?: Vehicle
   onClose: () => void
+  /** Shown as a destructive button at the end of the form when editing. */
+  onArchive?: () => Promise<void>
   onCreated: () => void
 }
 
-export function AddVehicleDialog({ clientId, vehicle, onClose, onCreated }: AddVehicleDialogProps) {
+export function AddVehicleDialog({
+  clientId,
+  vehicle,
+  onClose,
+  onArchive,
+  onCreated,
+}: AddVehicleDialogProps) {
   const isEditing = !!vehicle
   const [registration, setRegistration] = useState(vehicle?.registration ?? '')
   const [type, setType] = useState(vehicle?.type ?? '')
@@ -88,6 +97,7 @@ export function AddVehicleDialog({ clientId, vehicle, onClose, onCreated }: AddV
               {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Add vehicle'}
             </button>
           </div>
+          {onArchive && <ArchiveButton label="Archive vehicle" onArchive={onArchive} />}
         </form>
       </div>
     </div>

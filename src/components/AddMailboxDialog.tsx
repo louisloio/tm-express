@@ -1,14 +1,17 @@
 import { useState, type FormEvent } from 'react'
+import { ArchiveButton } from './ArchiveButton'
 import { supabase } from '../lib/supabase'
 import type { Mailbox } from '../types/database'
 
 interface AddMailboxDialogProps {
   mailbox?: Mailbox
   onClose: () => void
+  /** Shown as a destructive button at the end of the form when editing. */
+  onArchive?: () => Promise<void>
   onSaved: () => void
 }
 
-export function AddMailboxDialog({ mailbox, onClose, onSaved }: AddMailboxDialogProps) {
+export function AddMailboxDialog({ mailbox, onClose, onArchive, onSaved }: AddMailboxDialogProps) {
   const isEditing = !!mailbox
   const [label, setLabel] = useState(mailbox?.label ?? '')
   const [email, setEmail] = useState(mailbox?.email ?? '')
@@ -177,6 +180,7 @@ export function AddMailboxDialog({ mailbox, onClose, onSaved }: AddMailboxDialog
               {submitting ? 'Verifying…' : isEditing ? 'Save changes' : 'Connect mailbox'}
             </button>
           </div>
+          {onArchive && <ArchiveButton label="Disconnect mailbox" onArchive={onArchive} />}
         </form>
       </div>
     </div>

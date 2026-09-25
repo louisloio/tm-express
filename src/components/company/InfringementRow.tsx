@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { InlineLabel } from '../InlineLabel'
-import { RowMenu } from '../RowMenu'
+import { EditButton } from '../EditButton'
 import { formatDate } from '../../lib/format'
 import type { Infringement } from '../../types/database'
 
@@ -9,7 +9,6 @@ interface InfringementRowProps {
   infringement: Infringement
   linkedTo: string
   onEdit: () => void
-  onArchive: () => Promise<void>
 }
 
 export function InfringementRow({
@@ -17,7 +16,6 @@ export function InfringementRow({
   infringement,
   linkedTo,
   onEdit,
-  onArchive,
 }: InfringementRowProps) {
   return (
     <div className="flex items-start gap-1 py-3 pl-4 pr-1">
@@ -40,7 +38,7 @@ export function InfringementRow({
           <InlineLabel label="Notes" value={infringement.notes || '—'} />
         </div>
       </Link>
-      <RowMenu onEdit={onEdit} onArchive={onArchive} archiveLabel="Archive infringement" />
+      <EditButton onClick={onEdit} label="Edit" className="-mt-0.5 !text-[15px]" />
     </div>
   )
 }

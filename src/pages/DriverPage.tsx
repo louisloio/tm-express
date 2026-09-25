@@ -95,13 +95,7 @@ export function DriverPage() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg-app">
-      <TopSubPage
-        backTo={backTo}
-        title={driver.name}
-        onEdit={() => setEditOpen(true)}
-        onArchive={handleArchiveDriver}
-        archiveLabel="Archive driver"
-      />
+      <TopSubPage backTo={backTo} title={driver.name} onEdit={() => setEditOpen(true)} />
 
       <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
         <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px]">
@@ -161,6 +155,7 @@ export function DriverPage() {
       )}
       {editOpen && clientId && (
         <AddDriverDialog
+          onArchive={handleArchiveDriver}
           clientId={clientId}
           driver={driver}
           onClose={() => setEditOpen(false)}

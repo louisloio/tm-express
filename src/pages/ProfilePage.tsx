@@ -3,13 +3,54 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AddMailboxDialog } from '../components/AddMailboxDialog'
 import { Footer } from '../components/Footer'
 import { MailboxChooserDialog } from '../components/MailboxChooserDialog'
-import { RowMenu } from '../components/RowMenu'
+import { EditButton } from '../components/EditButton'
 import { TopSubPage } from '../components/TopSubPage'
 import { useAuth } from '../context/AuthContext'
 import { archiveRow } from '../lib/archive'
 import { startMailboxOAuth } from '../lib/mailboxOAuth'
 import { supabase } from '../lib/supabase'
 import type { Mailbox } from '../types/database'
+
+/** Gmail/Microsoft mailboxes have no settings to edit, so they get a direct Disconnect. */
+function DisconnectButton({ onDisconnect }: { onDisconnect: () => Promise<void> }) {
+  const [confirming, setConfirming] = useState(false)
+  const [working, setWorking] = useState(false)
+
+  if (!confirming) {
+    return (
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        className="shrink-0 rounded-full px-3 py-2 text-[15px] text-danger-text active:opacity-60"
+      >
+        Disconnect
+      </button>
+    )
+  }
+  return (
+    <div className="flex shrink-0 items-center gap-2 pr-1">
+      <button
+        type="button"
+        onClick={() => setConfirming(false)}
+        disabled={working}
+        className="rounded-full bg-fill px-3 py-1.5 text-[15px] font-semibold text-accent active:opacity-60"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={async () => {
+          setWorking(true)
+          await onDisconnect()
+        }}
+        disabled={working}
+        className="rounded-full bg-danger-text px-3 py-1.5 text-[15px] font-semibold text-white active:opacity-60 disabled:opacity-50"
+      >
+        {working ? '…' : 'Disconnect'}
+      </button>
+    </div>
+  )
+}
 
 const PROVIDER_LABEL: Record<Mailbox['provider'], string> = {
   smtp: 'Mail server',
@@ -313,15 +354,14 @@ export function ProfilePage() {
                       )}
                     </div>
                   </div>
-                  <RowMenu
-                    onEdit={
-                      mailbox.provider === 'smtp'
-                        ? () => setMailboxDialog({ mode: 'edit', mailbox })
-                        : undefined
-                    }
-                    onArchive={() => handleArchiveMailbox(mailbox.id)}
-                    archiveLabel="Disconnect"
-                  />
+                  {mailbox.provider === 'smtp' ? (
+                    <EditButton
+                      onClick={() => setMailboxDialog({ mode: 'edit', mailbox })}
+                      className="!text-[15px]"
+                    />
+                  ) : (
+                    <DisconnectButton onDisconnect={() => handleArchiveMailbox(mailbox.id)} />
+                  )}
                 </li>
               ))}
             </ul>
@@ -353,6 +393,14 @@ export function ProfilePage() {
         <AddMailboxDialog
           mailbox={mailboxDialog.mode === 'edit' ? mailboxDialog.mailbox : undefined}
           onClose={() => setMailboxDialog(null)}
+          onArchive={
+            mailboxDialog.mode === 'edit'
+              ? async () => {
+                  await handleArchiveMailbox(mailboxDialog.mailbox.id)
+                  setMailboxDialog(null)
+                }
+              : undefined
+          }
           onSaved={() => {
             setMailboxDialog(null)
             void refreshMailboxes()

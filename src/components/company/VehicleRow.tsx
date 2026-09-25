@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { InlineLabel } from '../InlineLabel'
-import { RowMenu } from '../RowMenu'
+import { EditButton } from '../EditButton'
 import { formatDate, getDocSlotStatus } from '../../lib/format'
 import type { DocType, Document, Vehicle } from '../../types/database'
 
@@ -17,10 +17,9 @@ interface VehicleRowProps {
   vehicle: Vehicle
   docsByType: Map<DocType, Document>
   onEdit: () => void
-  onArchive: () => Promise<void>
 }
 
-export function VehicleRow({ clientId, vehicle, docsByType, onEdit, onArchive }: VehicleRowProps) {
+export function VehicleRow({ clientId, vehicle, docsByType, onEdit }: VehicleRowProps) {
   return (
     <div className="flex items-start gap-1 py-3 pl-4 pr-1">
       <Link
@@ -48,7 +47,7 @@ export function VehicleRow({ clientId, vehicle, docsByType, onEdit, onArchive }:
           })}
         </div>
       </Link>
-      <RowMenu onEdit={onEdit} onArchive={onArchive} archiveLabel="Archive vehicle" />
+      <EditButton onClick={onEdit} label="Edit" className="-mt-0.5 !text-[15px]" />
     </div>
   )
 }

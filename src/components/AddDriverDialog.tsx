@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { ArchiveButton } from './ArchiveButton'
 import { supabase } from '../lib/supabase'
 import type { Driver } from '../types/database'
 
@@ -6,10 +7,18 @@ interface AddDriverDialogProps {
   clientId: string
   driver?: Driver
   onClose: () => void
+  /** Shown as a destructive button at the end of the form when editing. */
+  onArchive?: () => Promise<void>
   onCreated: () => void
 }
 
-export function AddDriverDialog({ clientId, driver, onClose, onCreated }: AddDriverDialogProps) {
+export function AddDriverDialog({
+  clientId,
+  driver,
+  onClose,
+  onArchive,
+  onCreated,
+}: AddDriverDialogProps) {
   const isEditing = !!driver
   const [name, setName] = useState(driver?.name ?? '')
   const [submitting, setSubmitting] = useState(false)
@@ -66,6 +75,7 @@ export function AddDriverDialog({ clientId, driver, onClose, onCreated }: AddDri
               {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Add driver'}
             </button>
           </div>
+          {onArchive && <ArchiveButton label="Archive driver" onArchive={onArchive} />}
         </form>
       </div>
     </div>
