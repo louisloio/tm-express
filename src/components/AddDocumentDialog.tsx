@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { FileDropzone } from './FileDropzone'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import type { DocParentType, DocType } from '../types/database'
@@ -28,6 +29,9 @@ interface AddDocumentDialogProps {
   parentType: DocParentType
   parentId: string
   docTypes: DocType[]
+  /** Pre-selected slot and file when the upload starts from a document row. */
+  initialDocType?: DocType
+  initialFile?: File
   onClose: () => void
   onCreated: () => void
 }
@@ -37,14 +41,16 @@ export function AddDocumentDialog({
   parentType,
   parentId,
   docTypes,
+  initialDocType,
+  initialFile,
   onClose,
   onCreated,
 }: AddDocumentDialogProps) {
   const { user } = useAuth()
-  const [docType, setDocType] = useState<DocType>(docTypes[0])
-  const [expiryDate, setExpiryDate] = useState(suggestExpiry(docTypes[0]))
+  const [docType, setDocType] = useState<DocType>(initialDocType ?? docTypes[0])
+  const [expiryDate, setExpiryDate] = useState(suggestExpiry(initialDocType ?? docTypes[0]))
   const [reminderDays, setReminderDays] = useState(14)
-  const [file, setFile] = useState<File | null>(null)
+  const [file, setFile] = useState<File | null>(initialFile ?? null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -118,12 +124,7 @@ export function AddDocumentDialog({
 
           <div>
             <label className="ios-label">File</label>
-            <input
-              type="file"
-              required
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="w-full text-[14px] text-text-primary"
-            />
+            <FileDropzone file={file} onChange={setFile} />
           </div>
 
           <div>

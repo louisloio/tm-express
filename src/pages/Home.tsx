@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useMatch } from 'react-router-dom'
 import { AddClientDialog } from '../components/AddClientDialog'
 import { TodoRow } from '../components/company/TodoRow'
 import { EditClientDialog } from '../components/EditClientDialog'
@@ -10,6 +10,7 @@ import { PlusIcon } from '../components/icons'
 import { OnboardingBadge } from '../components/OnboardingBadge'
 import { RowMenu } from '../components/RowMenu'
 import { archiveRow } from '../lib/archive'
+import { onDataChanged } from '../lib/dataEvents'
 import { supabase } from '../lib/supabase'
 import { fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
 import type { Client, ClientContact, Todo } from '../types/database'
@@ -74,6 +75,18 @@ export function Home() {
   useEffect(() => {
     void loadAll()
   }, [loadAll])
+
+  // On wide screens this list stays mounted next to the detail pane, so
+  // refetch quietly whenever a detail page reports a change.
+  useEffect(
+    () =>
+      onDataChanged(() => {
+        void Promise.all([loadClients(), loadTodos()]).catch(() => undefined)
+      }),
+    [loadClients, loadTodos],
+  )
+
+  const selectedClientId = useMatch('/clients/:clientId/*')?.params.clientId
 
   const clientNameById = new Map(clients.map((c) => [c.id, c.company_name]))
 
@@ -141,13 +154,16 @@ export function Home() {
             ) : (
               <ul className="ios-group mt-2">
                 {clients.map((client) => (
-                  <li key={client.id} className="flex items-center gap-2 py-1 pl-4 pr-1">
+                  <li
+                    key={client.id}
+                    className={`flex items-center gap-2 py-1 pl-4 pr-1 ${client.id === selectedClientId ? 'ios-selected' : ''}`}
+                  >
                     <Link
                       to={`/clients/${client.id}`}
                       className="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 py-2 active:opacity-60"
                     >
                       <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate text-[17px] font-medium text-text-primary">
+                        <span className="line-clamp-2 break-words text-[17px] font-medium text-text-primary">
                           {client.company_name}
                         </span>
                         <span className="text-[15px] text-text-secondary">

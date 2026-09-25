@@ -1,3 +1,4 @@
+import { notifyDataChanged } from './dataEvents'
 import { supabase } from './supabase'
 import type { Database } from '../types/database'
 
@@ -17,4 +18,5 @@ export async function archiveRow(table: ArchivableTable, id: string): Promise<vo
     .update({ archived_at: new Date().toISOString() } as Database['public']['Tables'][typeof table]['Update'])
     .eq('id', id)
   if (error) throw error
+  notifyDataChanged()
 }

@@ -18,6 +18,7 @@ import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
 import { archiveRow } from '../lib/archive'
 import { latestDocsByParent } from '../lib/documents'
+import { notifyDataChanged } from '../lib/dataEvents'
 import { supabase } from '../lib/supabase'
 import { fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
 import type {
@@ -156,6 +157,7 @@ export function CompanyPage() {
     })
     setError(null)
     setLoading(false)
+    notifyDataChanged()
   }, [clientId])
 
   useEffect(() => {
@@ -268,7 +270,7 @@ export function CompanyPage() {
         archiveLabel="Archive client"
       />
 
-      <div className="mx-auto w-full max-w-[600px] flex-1">
+      <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
         {/* CompanyDetails */}
         <div className="ios-group mt-3">
           <DetailRow label="OL number">{client.ol_number ?? '—'}</DetailRow>

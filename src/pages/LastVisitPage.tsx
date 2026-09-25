@@ -6,6 +6,7 @@ import { InlineLabel } from '../components/InlineLabel'
 import { TopSubPage } from '../components/TopSubPage'
 import { archiveRow } from '../lib/archive'
 import { formatDate } from '../lib/format'
+import { notifyDataChanged } from '../lib/dataEvents'
 import { supabase } from '../lib/supabase'
 import type { Visit } from '../types/database'
 
@@ -35,6 +36,7 @@ export function LastVisitPage() {
       setError(null)
     }
     setLoading(false)
+    notifyDataChanged()
   }, [visitId])
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export function LastVisitPage() {
         archiveLabel="Archive visit"
       />
 
-      <div className="mx-auto w-full max-w-[600px] flex-1">
+      <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
         <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px]">
           <InlineLabel label="Date" value={formatDate(visit.date)} />
           <div className="flex flex-col gap-1">

@@ -1,10 +1,11 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { EmptyDetail } from './components/EmptyDetail'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { SplitLayout } from './components/SplitLayout'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CompanyPage } from './pages/CompanyPage'
 import { DriverPage } from './pages/DriverPage'
 import { ForgotPassword } from './pages/ForgotPassword'
-import { Home } from './pages/Home'
 import { InfringementPage } from './pages/InfringementPage'
 import { LastVisitPage } from './pages/LastVisitPage'
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
@@ -50,69 +51,24 @@ function AppRoutes() {
       />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route
-        path="/"
         element={
           <ProtectedRoute>
-            <Home />
+            <SplitLayout />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/oauth/:provider/callback"
-        element={
-          <ProtectedRoute>
-            <OAuthCallbackPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/clients/:clientId"
-        element={
-          <ProtectedRoute>
-            <CompanyPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/clients/:clientId/vehicles/:vehicleId"
-        element={
-          <ProtectedRoute>
-            <VehiculePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/clients/:clientId/drivers/:driverId"
-        element={
-          <ProtectedRoute>
-            <DriverPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/clients/:clientId/visits/:visitId"
-        element={
-          <ProtectedRoute>
-            <LastVisitPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/clients/:clientId/infringements/:infringementId"
-        element={
-          <ProtectedRoute>
-            <InfringementPage />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<EmptyDetail />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/oauth/:provider/callback" element={<OAuthCallbackPage />} />
+        <Route path="/clients/:clientId" element={<CompanyPage />} />
+        <Route path="/clients/:clientId/vehicles/:vehicleId" element={<VehiculePage />} />
+        <Route path="/clients/:clientId/drivers/:driverId" element={<DriverPage />} />
+        <Route path="/clients/:clientId/visits/:visitId" element={<LastVisitPage />} />
+        <Route
+          path="/clients/:clientId/infringements/:infringementId"
+          element={<InfringementPage />}
+        />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

@@ -3,14 +3,16 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { AddDocumentDialog } from '../components/AddDocumentDialog'
 import { AddVehicleDialog } from '../components/AddVehicleDialog'
 import { DocumentRow } from '../components/company/DocumentRow'
+import { DocSlotRow } from '../components/DocSlotRow'
 import { Footer } from '../components/Footer'
 import { InlineLabel } from '../components/InlineLabel'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
 import { archiveRow } from '../lib/archive'
 import { formatDate, getDocSlotStatus } from '../lib/format'
+import { notifyDataChanged } from '../lib/dataEvents'
 import { supabase } from '../lib/supabase'
-import type { Document, Vehicle } from '../types/database'
+import type { DocType, Document, Vehicle } from '../types/database'
 
 const DOC_TYPES = ['PMI', 'Brake test', 'MOT', 'VED', 'Insurance'] as const
 
@@ -24,7 +26,7 @@ export function VehiculePage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [uploadOpen, setUploadOpen] = useState(false)
+  const [upload, setUpload] = useState<{ docType?: DocType; file?: File } | null>(null)
   const [editOpen, setEditOpen] = useState(false)
 
   const load = useCallback(async () => {
@@ -52,6 +54,7 @@ export function VehiculePage() {
       setError(null)
     }
     setLoading(false)
+    notifyDataChanged()
   }, [vehicleId])
 
   useEffect(() => {
@@ -105,27 +108,24 @@ export function VehiculePage() {
         archiveLabel="Archive vehicle"
       />
 
-      <div className="mx-auto w-full max-w-[600px] flex-1">
+      <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
         <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px]">
           <InlineLabel label="Registration" value={vehicle.registration} />
           <InlineLabel label="Type" value={vehicle.type ?? '—'} />
         </div>
 
-        <SectionTitle
-          title="Documents"
-          addLabel="Upload document"
-          onAdd={() => setUploadOpen(true)}
-        />
+        <SectionTitle title="Documents" addLabel="Upload document" onAdd={() => setUpload({})} />
         <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px] !mt-0">
           {DOC_TYPES.map((type) => {
             const doc = latestByType.get(type)
             const status = getDocSlotStatus(doc)
             return (
-              <InlineLabel
+              <DocSlotRow
                 key={type}
                 label={type}
                 value={doc?.expiry_date ? `Expires ${formatDate(doc.expiry_date)}` : 'Not on file'}
                 tone={status === 'ok' ? undefined : status}
+                onFile={(file) => setUpload({ docType: type, file })}
               />
             )
           })}
@@ -150,15 +150,17 @@ export function VehiculePage() {
 
       <Footer />
 
-      {uploadOpen && clientId && vehicleId && (
+      {upload && clientId && vehicleId && (
         <AddDocumentDialog
           clientId={clientId}
           parentType="vehicle"
           parentId={vehicleId}
           docTypes={[...DOC_TYPES]}
-          onClose={() => setUploadOpen(false)}
+          initialDocType={upload.docType}
+          initialFile={upload.file}
+          onClose={() => setUpload(null)}
           onCreated={() => {
-            setUploadOpen(false)
+            setUpload(null)
             void load()
           }}
         />

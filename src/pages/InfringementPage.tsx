@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AddInfringementDialog } from '../components/AddInfringementDialog'
+import { EmailChaseModal } from '../components/EmailChaseModal'
 import { Footer } from '../components/Footer'
 import { InlineLabel } from '../components/InlineLabel'
 import { TopSubPage } from '../components/TopSubPage'
 import { archiveRow } from '../lib/archive'
 import { formatDate } from '../lib/format'
+import { notifyDataChanged } from '../lib/dataEvents'
 import { supabase } from '../lib/supabase'
-import type { Driver, Infringement, Vehicle } from '../types/database'
+import { fetchOpenTodos, reconcileTodos } from '../lib/todos'
+import type { ClientContact, Driver, Infringement, Todo, Vehicle } from '../types/database'
 
 export function InfringementPage() {
   const { clientId, infringementId } = useParams<{
@@ -23,6 +26,13 @@ export function InfringementPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [chase, setChase] = useState<{
+    todo: Todo
+    contacts: ClientContact[]
+    clientName: string
+  } | null>(null)
 
   const load = useCallback(async () => {
     if (!infringementId || !clientId) return
@@ -56,6 +66,7 @@ export function InfringementPage() {
     setClientVehicles(clientVehiclesRes.data ?? [])
     setError(null)
     setLoading(false)
+    notifyDataChanged()
   }, [infringementId, clientId])
 
   useEffect(() => {
@@ -68,6 +79,47 @@ export function InfringementPage() {
     if (!infringementId) return
     await archiveRow('infringements', infringementId)
     navigate(backTo)
+  }
+
+  async function setResolved(resolved: boolean) {
+    if (!infringementId) return
+    setBusy(true)
+    setActionError(null)
+    const { error } = await supabase
+      .from('infringements')
+      .update({ resolved })
+      .eq('id', infringementId)
+    if (error) setActionError(error.message)
+    else await load()
+    setBusy(false)
+  }
+
+  async function handleChase() {
+    if (!infringementId || !clientId) return
+    setBusy(true)
+    setActionError(null)
+    try {
+      // The open todo is what a chase is recorded against. Reopened
+      // infringements get theirs back from reconcile.
+      let todo = (await fetchOpenTodos(clientId)).find((t) => t.source_id === infringementId)
+      if (!todo) {
+        await reconcileTodos()
+        todo = (await fetchOpenTodos(clientId)).find((t) => t.source_id === infringementId)
+      }
+      if (!todo) throw new Error('No open todo found for this infringement.')
+      const [contactsRes, clientRes] = await Promise.all([
+        supabase.from('client_contacts').select('*').eq('client_id', clientId),
+        supabase.from('clients').select('company_name').eq('id', clientId).maybeSingle(),
+      ])
+      setChase({
+        todo,
+        contacts: contactsRes.data ?? [],
+        clientName: clientRes.data?.company_name ?? 'the client',
+      })
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not start the chase.')
+    }
+    setBusy(false)
   }
 
   if (loading) {
@@ -99,7 +151,7 @@ export function InfringementPage() {
         archiveLabel="Archive infringement"
       />
 
-      <div className="mx-auto w-full max-w-[600px] flex-1">
+      <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
         <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px]">
           <InlineLabel label="Category" value={infringement.category} />
           <InlineLabel label="Type" value={infringement.type} />
@@ -116,10 +168,57 @@ export function InfringementPage() {
             <p className="text-[17px] text-text-primary">{infringement.notes || '—'}</p>
           </div>
         </div>
+
+        <div className="mt-6 flex flex-col gap-3 px-4">
+          {actionError && <p className="px-1 text-[15px] text-danger-text">{actionError}</p>}
+          {infringement.resolved ? (
+            <button
+              type="button"
+              onClick={() => setResolved(false)}
+              disabled={busy}
+              className="ios-btn-secondary w-full"
+            >
+              Reopen infringement
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleChase}
+                disabled={busy}
+                className="ios-btn-primary w-full"
+              >
+                Chase client
+              </button>
+              <button
+                type="button"
+                onClick={() => setResolved(true)}
+                disabled={busy}
+                className="ios-btn-secondary w-full"
+              >
+                Mark as resolved
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <Footer />
 
+      {chase && clientId && (
+        <EmailChaseModal
+          clientId={clientId}
+          clientName={chase.clientName}
+          contacts={chase.contacts}
+          scope="single_todo"
+          todo={chase.todo}
+          onClose={() => setChase(null)}
+          onSent={() => {
+            setChase(null)
+            void load()
+          }}
+        />
+      )}
       {editOpen && clientId && (
         <AddInfringementDialog
           clientId={clientId}

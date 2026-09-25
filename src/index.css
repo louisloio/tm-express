@@ -343,11 +343,20 @@ button {
   }
 
   /* ---- grouped lists --------------------------------------------------- */
+  /* No overflow:hidden here — row menus (popovers) must be able to extend
+     past the group. Corner rounding is applied to the first/last row instead. */
   .ios-group {
     margin: 0 16px;
-    overflow: hidden;
     border-radius: 12px;
     background: var(--color-bg-row);
+  }
+  .ios-group > :first-child {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+  }
+  .ios-group > :last-child {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
   }
   .ios-group > * + * {
     position: relative;
@@ -388,6 +397,10 @@ button {
   }
   .ios-row-field > input::placeholder {
     color: var(--color-text-muted);
+  }
+  /* selected row in the sidebar list (wide layouts) */
+  .ios-group > .ios-selected {
+    background: color-mix(in srgb, var(--color-accent) 14%, var(--color-bg-row));
   }
   .ios-empty {
     margin: 0 16px;
