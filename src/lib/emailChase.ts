@@ -34,8 +34,18 @@ Transport Manager`
   return { subject, body }
 }
 
+/** Email clients can't render SVG, so the logo is a PNG served from the deployed app. */
+const EMAIL_LOGO_URL = `${
+  (import.meta.env.VITE_PUBLIC_APP_URL as string | undefined) ??
+  'https://tm-express-lyart.vercel.app'
+}/email-logo.png`
+
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 /** Turns the plain-text body the user edits in the chase modal into a styled
@@ -57,23 +67,47 @@ export function renderChaseEmailHtml(bodyText: string): string {
       const isList = lines.length > 0 && lines.every((l) => l.startsWith('- '))
       if (isList) {
         const items = lines
-          .map((l) => `<li style="margin-bottom:6px;">${escapeHtml(l.slice(2))}</li>`)
+          .map((l) => `<li style="margin-bottom:8px;">${escapeHtml(l.slice(2))}</li>`)
           .join('')
-        return `<ul style="margin:0 0 16px;padding-left:20px;">${items}</ul>`
+        return `<ul style="margin:0 0 16px;padding-left:20px;color:#1c1c1e;">${items}</ul>`
       }
-      return `<p style="margin:0 0 16px;line-height:1.5;">${lines.map(escapeHtml).join('<br>')}</p>`
+      return `<p style="margin:0 0 16px;line-height:1.5;color:#1c1c1e;">${lines.map(escapeHtml).join('<br>')}</p>`
     })
     .join('')
 
-  return `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;">
-  <div style="background:linear-gradient(135deg,#6d28d9,#4f46e5);padding:18px 24px;border-radius:10px 10px 0 0;">
-    <span style="color:#ffffff;font-size:17px;font-weight:700;letter-spacing:-0.3px;">TM Express</span>
-  </div>
-  <div style="border:1px solid #e5e5e5;border-top:none;border-radius:0 0 10px 10px;padding:24px;color:#1a1a1a;font-size:15px;">
-    ${blocksHtml}
-  </div>
-  <p style="margin:16px 4px 0;color:#8a8a8a;font-size:12px;">Sent via TM Express compliance tracking.</p>
-</div>`
+  return `<!DOCTYPE html>
+<html lang="en">
+<body style="margin:0;padding:0;background:#f2f2f7;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f2f2f7;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+        <tr>
+          <td style="height:4px;line-height:4px;font-size:0;border-radius:14px 14px 0 0;background:#0a456f;background-image:linear-gradient(90deg,#8cc3ee,#0a456f);">&nbsp;</td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;padding:24px 28px 8px;">
+            <img src="${EMAIL_LOGO_URL}" alt="TM Express" width="120" height="36" style="display:block;border:0;outline:none;height:36px;width:120px;">
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;padding:16px 28px 12px;color:#1c1c1e;font-size:16px;line-height:1.5;">
+            ${blocksHtml}
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;border-radius:0 0 14px 14px;padding:0 28px 24px;">
+            <div style="border-top:1px solid #e5e5ea;padding-top:16px;color:#8e8e93;font-size:12px;line-height:1.4;">
+              Sent via <span style="color:#0a456f;font-weight:600;">TM Express</span> compliance tracking.
+            </div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`
 }
 
 /** Calls the send-chase-email Edge Function, which sends via the given mailbox's own SMTP server. */
