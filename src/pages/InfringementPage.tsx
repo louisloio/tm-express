@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AddInfringementDialog } from '../components/AddInfringementDialog'
 import { Footer } from '../components/Footer'
-import { Header } from '../components/Header'
 import { InlineLabel } from '../components/InlineLabel'
 import { TopSubPage } from '../components/TopSubPage'
 import { archiveRow } from '../lib/archive'
@@ -11,7 +10,10 @@ import { supabase } from '../lib/supabase'
 import type { Driver, Infringement, Vehicle } from '../types/database'
 
 export function InfringementPage() {
-  const { clientId, infringementId } = useParams<{ clientId: string; infringementId: string }>()
+  const { clientId, infringementId } = useParams<{
+    clientId: string
+    infringementId: string
+  }>()
   const navigate = useNavigate()
   const [infringement, setInfringement] = useState<Infringement | null>(null)
   const [driver, setDriver] = useState<Driver | null>(null)
@@ -71,8 +73,7 @@ export function InfringementPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-bg-app">
-        <Header />
-        <p className="px-6 py-8 text-[14px] text-text-secondary">Loading…</p>
+        <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
   }
@@ -80,9 +81,8 @@ export function InfringementPage() {
   if (error || !infringement) {
     return (
       <div className="flex min-h-screen flex-col bg-bg-app">
-        <Header />
         <TopSubPage backTo={backTo} title="Infringement" />
-        <p className="px-6 py-8 text-[14px] text-danger-text">
+        <p className="px-5 py-8 text-[15px] text-danger-text">
           {error ?? 'Infringement not found.'}
         </p>
       </div>
@@ -91,7 +91,6 @@ export function InfringementPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
-      <Header />
       <TopSubPage
         backTo={backTo}
         title={infringement.type}
@@ -101,7 +100,7 @@ export function InfringementPage() {
       />
 
       <div className="mx-auto w-full max-w-[600px] flex-1">
-        <div className="flex flex-col gap-2 px-6 py-4">
+        <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px]">
           <InlineLabel label="Category" value={infringement.category} />
           <InlineLabel label="Type" value={infringement.type} />
           <InlineLabel
@@ -113,10 +112,8 @@ export function InfringementPage() {
           {vehicle && <InlineLabel label="Vehicle" value={vehicle.registration} />}
           <InlineLabel label="Date" value={formatDate(infringement.date)} />
           <div className="flex flex-col gap-1">
-            <span className="text-[14px] font-medium text-text-secondary">Notes</span>
-            <p className="text-[14px] font-medium text-text-primary">
-              {infringement.notes || '—'}
-            </p>
+            <span className="text-[15px] text-text-secondary">Notes</span>
+            <p className="text-[17px] text-text-primary">{infringement.notes || '—'}</p>
           </div>
         </div>
       </div>

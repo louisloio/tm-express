@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Todo } from '../../types/database'
+import { EnvelopeIcon } from '../icons'
 
 interface TodoRowProps {
   todo: Todo
@@ -9,17 +10,17 @@ interface TodoRowProps {
 }
 
 export function TodoRow({ todo, href, clientName, onOpenChase }: TodoRowProps) {
-  const danger = { className: 'border-transparent bg-danger-bg text-danger-text' }
+  const danger = { className: 'bg-danger-bg text-danger-text' }
   const badge =
     todo.source_type === 'infringement'
-      ? { label: 'Infringement', className: 'border-border-subtle bg-bg-white text-text-primary' }
+      ? { label: 'Infringement', className: 'bg-fill text-text-secondary' }
       : todo.description.includes('missing')
         ? { label: 'Missing Document', ...danger }
         : todo.description.includes('overdue')
           ? { label: 'Overdue Document', ...danger }
           : {
               label: 'Approaching Due Date',
-              className: 'border-transparent bg-warning-bg text-warning-text',
+              className: 'bg-warning-bg text-warning-text',
             }
 
   function handleChaseClick(e: React.MouseEvent) {
@@ -29,16 +30,17 @@ export function TodoRow({ todo, href, clientName, onOpenChase }: TodoRowProps) {
   }
 
   return (
-    <Link
-      to={href}
-      className="flex items-center gap-8 border-t border-border-divider bg-bg-row px-6 py-3"
-    >
-      <div className="flex flex-1 flex-col gap-1">
-        <span className={`w-fit rounded border px-1 py-0.5 text-[12px] font-medium ${badge.className}`}>
+    <Link to={href} className="flex items-center gap-3 py-3 pl-4 pr-1 active:bg-fill">
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+        <span
+          className={`rounded-full px-2 py-[3px] text-[12px] font-semibold leading-none ${badge.className}`}
+        >
           {badge.label}
         </span>
-        <span className="text-[14px] font-semibold text-text-primary">{todo.description}</span>
-        {clientName && <span className="text-[14px] text-text-secondary">{clientName}</span>}
+        <span className="text-[17px] font-medium leading-snug text-text-primary">
+          {todo.description}
+        </span>
+        {clientName && <span className="text-[15px] text-text-secondary">{clientName}</span>}
       </div>
       {todo.source_type === 'document' && (
         <button
@@ -46,17 +48,9 @@ export function TodoRow({ todo, href, clientName, onOpenChase }: TodoRowProps) {
           onClick={handleChaseClick}
           title="Chase"
           aria-label="Chase"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border-button"
+          className="ios-icon-btn"
         >
-          <svg viewBox="0 0 24 24" className="size-4" fill="none" aria-hidden="true">
-            <path
-              d="M3 6h18v12H3z"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinejoin="round"
-            />
-            <path d="M3 6l9 7 9-7" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-          </svg>
+          <EnvelopeIcon />
         </button>
       )}
     </Link>

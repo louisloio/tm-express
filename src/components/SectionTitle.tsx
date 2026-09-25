@@ -1,4 +1,4 @@
-import plusIcon from '../assets/icon-plus.svg'
+import { PlusIcon } from './icons'
 
 interface SectionTitleProps {
   title: string
@@ -6,21 +6,20 @@ interface SectionTitleProps {
   addLabel?: string
 }
 
+/** Prominent section header (Apple "Title 2") with an optional trailing add glyph. */
 export function SectionTitle({ title, onAdd, addLabel }: SectionTitleProps) {
   return (
-    <div className="flex items-center gap-2 border-t border-border-divider px-6 py-4">
-      <h2 className="flex-1 text-[16px] font-bold tracking-[-0.32px] text-text-primary">
-        {title}
-      </h2>
+    <div className="flex items-center gap-2 pb-1 pl-5 pr-2 pt-6">
+      <h2 className="ios-section-title flex-1">{title}</h2>
       {onAdd && (
         <button
           type="button"
           onClick={onAdd}
           aria-label={addLabel ?? `Add to ${title}`}
           title={addLabel}
-          className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border-button"
+          className="ios-icon-btn"
         >
-          <img src={plusIcon} alt="" className="size-3.5" />
+          <PlusIcon width={24} height={24} />
         </button>
       )}
     </div>

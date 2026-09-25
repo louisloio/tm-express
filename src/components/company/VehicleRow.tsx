@@ -22,11 +22,14 @@ interface VehicleRowProps {
 
 export function VehicleRow({ clientId, vehicle, docsByType, onEdit, onArchive }: VehicleRowProps) {
   return (
-    <div className="flex items-start gap-2 border-t border-border-divider bg-bg-row px-6 py-3">
-      <Link to={`/clients/${clientId}/vehicles/${vehicle.id}`} className="flex flex-1 flex-col gap-2">
+    <div className="flex items-start gap-1 py-3 pl-4 pr-1">
+      <Link
+        to={`/clients/${clientId}/vehicles/${vehicle.id}`}
+        className="flex min-w-0 flex-1 flex-col gap-2.5 active:opacity-60"
+      >
         <div className="flex flex-col gap-1">
-          <span className="text-[12px] font-semibold text-text-secondary">Registration</span>
-          <span className="text-[16px] font-semibold text-text-primary">
+          <span className="text-[13px] text-text-secondary">Registration</span>
+          <span className="text-[17px] font-semibold text-text-primary">
             {vehicle.registration}
           </span>
         </div>

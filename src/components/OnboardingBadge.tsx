@@ -4,7 +4,7 @@ export function OnboardingBadge({ status }: { status: OnboardingStatus }) {
   const isApproved = status === 'Approved'
   return (
     <span
-      className={`w-fit shrink-0 rounded px-1 py-0.5 text-[12px] font-medium tracking-[-0.312px] ${
+      className={`inline-flex w-fit shrink-0 items-center rounded-full px-2.5 py-[3px] text-[12px] font-semibold leading-none tracking-normal ${
         isApproved ? 'bg-success-bg text-success-text' : 'bg-warning-bg text-warning-text'
       }`}
     >

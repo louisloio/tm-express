@@ -2,33 +2,50 @@ import { Link } from 'react-router-dom'
 import logo from '../assets/logo.svg'
 import { useAuth } from '../context/AuthContext'
 
-export function Header() {
+interface HeaderProps {
+  /** Rendered inside a parent that supplies the bar material, safe-area
+   * padding and hairline (e.g. Home's sticky header + segmented control). */
+  bare?: boolean
+}
+
+/** App-level navigation bar: brand on the left, account avatar trailing. */
+export function Header({ bare = false }: HeaderProps) {
   const { user, profile } = useAuth()
   const label = (profile?.first_name?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()
   const displayName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || user?.email
 
-  return (
-    <header className="flex h-16 w-full items-center justify-between border-b border-border-divider bg-bg-white px-6">
-      <Link to="/">
-        <img src={logo} alt="TM Express" className="h-[18px] w-auto" />
+  const row = (
+    <div className="mx-auto flex h-11 w-full max-w-[600px] items-center justify-between px-4">
+      <Link
+        to="/"
+        aria-label="TM Express home"
+        className="flex h-11 items-center active:opacity-60"
+      >
+        <img src={logo} alt="TM Express" className="h-[17px] w-auto" />
       </Link>
-      <Link to="/profile" className="flex items-center gap-2">
+      <Link
+        to="/profile"
+        aria-label={`Profile — ${displayName ?? ''}`}
+        title={displayName ?? undefined}
+        className="flex size-11 items-center justify-center active:opacity-60"
+      >
         {profile?.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt=""
-            className="size-8 shrink-0 rounded-full object-cover"
-          />
+          <img src={profile.avatar_url} alt="" className="size-[30px] rounded-full object-cover" />
         ) : (
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-from text-sm font-medium text-white">
+          <span className="flex size-[30px] items-center justify-center rounded-full bg-accent text-[14px] font-semibold text-white">
             {label}
           </span>
         )}
-        <span className="max-w-[160px] truncate text-[16px] text-text-primary">
-          {displayName}
-        </span>
       </Link>
+    </div>
+  )
+
+  if (bare) return row
+
+  return (
+    <header className="ios-bar sticky top-0 z-30 border-b-[0.5px] border-border-divider pt-[env(safe-area-inset-top)]">
+      {row}
     </header>
   )
 }

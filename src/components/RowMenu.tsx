@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import moreIcon from '../assets/icon-more.svg'
+import { useEffect, useRef, useState } from 'react'
+import { EllipsisIcon } from './icons'
 
 interface RowMenuProps {
   onEdit?: () => void
@@ -7,10 +7,21 @@ interface RowMenuProps {
   archiveLabel: string
 }
 
+/** Trailing "more" button on list rows — opens an iOS-style context menu. */
 export function RowMenu({ onEdit, onArchive, archiveLabel }: RowMenuProps) {
   const [open, setOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onPointerDown(e: PointerEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [open])
 
   function stop(e: React.MouseEvent) {
     e.preventDefault()
@@ -32,15 +43,6 @@ export function RowMenu({ onEdit, onArchive, archiveLabel }: RowMenuProps) {
   if (confirming) {
     return (
       <div className="flex shrink-0 items-center gap-2" onClick={stop}>
-        <span className="text-[13px] text-text-secondary">Archive?</span>
-        <button
-          type="button"
-          onClick={handleArchive}
-          disabled={archiving}
-          className="rounded-full bg-danger-text px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-60"
-        >
-          {archiving ? '…' : 'Yes'}
-        </button>
         <button
           type="button"
           onClick={(e) => {
@@ -48,26 +50,35 @@ export function RowMenu({ onEdit, onArchive, archiveLabel }: RowMenuProps) {
             setConfirming(false)
           }}
           disabled={archiving}
-          className="rounded-full border border-border-button px-3 py-1.5 text-[13px] font-medium text-text-primary"
+          className="rounded-full bg-fill px-3.5 py-1.5 text-[15px] font-semibold text-accent active:opacity-60"
         >
-          No
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleArchive}
+          disabled={archiving}
+          className="rounded-full bg-danger-text px-3.5 py-1.5 text-[15px] font-semibold text-white active:opacity-60 disabled:opacity-50"
+        >
+          {archiving ? '…' : 'Archive'}
         </button>
       </div>
     )
   }
 
   return (
-    <div className="relative shrink-0" onClick={stop}>
+    <div ref={rootRef} className="relative shrink-0" onClick={stop}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="More actions"
-        className="flex size-10 items-center justify-center rounded-full border border-border-button"
+        aria-expanded={open}
+        className="ios-icon-btn text-text-tertiary"
       >
-        <img src={moreIcon} alt="" className="size-6" />
+        <EllipsisIcon />
       </button>
       {open && (
-        <div className="absolute right-0 top-12 z-10 w-36 overflow-hidden rounded-lg border border-border-subtle bg-bg-white shadow-lg">
+        <div className="ios-menu absolute right-0 top-11 z-30 w-[220px]">
           {onEdit && (
             <button
               type="button"
@@ -75,7 +86,7 @@ export function RowMenu({ onEdit, onArchive, archiveLabel }: RowMenuProps) {
                 setOpen(false)
                 onEdit()
               }}
-              className="block w-full px-4 py-2.5 text-left text-[14px] text-text-primary hover:bg-bg-row"
+              className="ios-menu-item"
             >
               Edit
             </button>
@@ -83,7 +94,7 @@ export function RowMenu({ onEdit, onArchive, archiveLabel }: RowMenuProps) {
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="block w-full px-4 py-2.5 text-left text-[14px] text-danger-text hover:bg-bg-row"
+            className="ios-menu-item destructive"
           >
             {archiveLabel}
           </button>

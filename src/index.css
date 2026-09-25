@@ -1,47 +1,431 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
+/*
+ * Apple Human Interface Guidelines foundation.
+ * Colors are iOS system colors (light values here, dark overrides below).
+ * Token NAMES are kept from the previous theme so existing utility classes
+ * (bg-bg-app, text-text-secondary, ...) pick up the new look automatically.
+ */
 @theme {
-  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    system-ui, "Helvetica Neue", Arial, sans-serif;
 
-  --color-bg-app: #f1f2f2;
-  --color-bg-row: #fafafb;
+  --radius-lg: 0.75rem;
+  --radius-xl: 0.875rem;
+
+  /* Surfaces — systemGroupedBackground / secondarySystemGroupedBackground */
+  --color-bg-app: #f2f2f7;
+  --color-bg-row: #ffffff;
   --color-bg-white: #ffffff;
+  --color-bar: rgba(249, 249, 249, 0.8);
+  /* tertiary system fill — text fields, segmented control track, chips */
+  --color-fill: rgba(118, 118, 128, 0.12);
+  --color-fill-strong: rgba(118, 118, 128, 0.2);
+  --color-segment: #ffffff;
 
-  --color-border-subtle: #e5e7e7;
-  --color-border-divider: #d7dae0;
-  --color-border-button: #dde0e2;
+  /* separator + outlines */
+  --color-border-subtle: rgba(60, 60, 67, 0.18);
+  --color-border-divider: rgba(60, 60, 67, 0.29);
+  --color-border-button: rgba(60, 60, 67, 0.18);
 
+  /* label / secondaryLabel / tertiaryLabel / quaternaryLabel */
   --color-text-primary: #000000;
-  --color-text-secondary: #72757e;
-  --color-text-tertiary: #5a5c63;
-  --color-text-muted: #989ca8;
+  --color-text-secondary: rgba(60, 60, 67, 0.7);
+  --color-text-tertiary: rgba(60, 60, 67, 0.6);
+  --color-text-muted: rgba(60, 60, 67, 0.3);
 
-  --color-success-bg: #e9f7e6;
-  --color-success-text: #1e8609;
-  --color-warning-bg: #fef5ea;
-  --color-warning-text: #ad5f0b;
-  --color-danger-bg: #fdedeb;
-  --color-danger-text: #e32b17;
+  /* systemGreen / systemOrange / systemRed (accessible text variants) */
+  --color-success-bg: rgba(52, 199, 89, 0.15);
+  --color-success-text: #248a3d;
+  --color-warning-bg: rgba(255, 149, 0, 0.16);
+  --color-warning-text: #b25000;
+  --color-danger-bg: rgba(255, 59, 48, 0.13);
+  --color-danger-text: #d70015;
 
-  --color-accent-from: #9c27fd;
-  --color-accent-to: #3b34fe;
+  /* systemBlue — the app tint */
+  --color-accent: #007aff;
+  --color-accent-from: #007aff;
+  --color-accent-to: #007aff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-app: #000000;
+    --color-bg-row: #1c1c1e;
+    --color-bg-white: #1c1c1e;
+    --color-bar: rgba(29, 29, 31, 0.78);
+    --color-fill: rgba(118, 118, 128, 0.24);
+    --color-fill-strong: rgba(118, 118, 128, 0.36);
+    --color-segment: #636366;
+
+    --color-border-subtle: rgba(84, 84, 88, 0.55);
+    --color-border-divider: rgba(84, 84, 88, 0.6);
+    --color-border-button: rgba(84, 84, 88, 0.55);
+
+    --color-text-primary: #ffffff;
+    --color-text-secondary: rgba(235, 235, 245, 0.62);
+    --color-text-tertiary: rgba(235, 235, 245, 0.5);
+    --color-text-muted: rgba(235, 235, 245, 0.3);
+
+    --color-success-bg: rgba(48, 209, 88, 0.2);
+    --color-success-text: #30d158;
+    --color-warning-bg: rgba(255, 159, 10, 0.2);
+    --color-warning-text: #ff9f0a;
+    --color-danger-bg: rgba(255, 69, 58, 0.2);
+    --color-danger-text: #ff453a;
+
+    --color-accent: #0a84ff;
+    --color-accent-from: #0a84ff;
+    --color-accent-to: #0a84ff;
+  }
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   margin: 0;
   background: var(--color-bg-app);
+  color: var(--color-text-primary);
   font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.29;
+  letter-spacing: -0.022em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   /* iOS standalone mode (apple-mobile-web-app-status-bar-style:
      black-translucent, see index.html) draws content full-screen under the
-     status bar/notch — without this, the header sits behind it. */
-  padding-top: env(safe-area-inset-top);
+     status bar/notch. The top inset is applied by the translucent bars
+     themselves (Header, auth pages) so the material extends under it. */
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.btn-primary {
-  background-image: linear-gradient(270deg, var(--color-accent-from) 0%, var(--color-accent-to) 100%);
+button {
+  font: inherit;
+}
+
+@layer components {
+  /* ---- materials ------------------------------------------------------ */
+  .ios-bar {
+    background: var(--color-bar);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  /* ---- buttons -------------------------------------------------------- */
+  .btn-primary,
+  .ios-btn-primary {
+    background: var(--color-accent);
+    color: #fff;
+    font-weight: 600;
+    font-size: 17px;
+    border-radius: 14px;
+    padding: 14px 24px;
+    text-align: center;
+    transition: opacity 0.15s ease;
+  }
+  .ios-btn-secondary {
+    background: var(--color-fill);
+    color: var(--color-accent);
+    font-weight: 600;
+    font-size: 17px;
+    border-radius: 14px;
+    padding: 14px 24px;
+    text-align: center;
+    transition: opacity 0.15s ease;
+  }
+  .btn-primary:active:not(:disabled),
+  .ios-btn-primary:active:not(:disabled),
+  .ios-btn-secondary:active:not(:disabled) {
+    opacity: 0.6;
+  }
+  .btn-primary:disabled,
+  .ios-btn-primary:disabled,
+  .ios-btn-secondary:disabled {
+    opacity: 0.4;
+  }
+
+  /* circular icon button (Apple "plain" glyph button, 44pt hit area) */
+  .ios-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    color: var(--color-accent);
+    transition:
+      opacity 0.15s ease,
+      background-color 0.15s ease;
+  }
+  .ios-icon-btn:active {
+    background: var(--color-fill);
+  }
+
+  /* ---- forms ---------------------------------------------------------- */
+  .ios-label {
+    display: block;
+    margin-bottom: 6px;
+    padding: 0 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+  .ios-field {
+    width: 100%;
+    border: 0;
+    border-radius: 10px;
+    background: var(--color-fill);
+    padding: 12px 14px;
+    font-size: 17px;
+    color: var(--color-text-primary);
+    outline: none;
+    transition: box-shadow 0.15s ease;
+    caret-color: var(--color-accent);
+  }
+  .ios-field::placeholder {
+    color: var(--color-text-muted);
+  }
+  .ios-field:focus {
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--color-accent) 35%, transparent);
+  }
+
+  /* ---- sheets (modal dialogs) ----------------------------------------- */
+  .ios-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.32);
+    animation: ios-fade 0.2s ease-out;
+  }
+  @media (min-width: 640px) {
+    .ios-backdrop {
+      align-items: center;
+    }
+  }
+  .ios-sheet {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 440px;
+    max-height: 92vh;
+    overflow-y: auto;
+    background: var(--color-bg-white);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
+    animation: ios-sheet-in 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  @media (min-width: 640px) {
+    .ios-sheet {
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    }
+  }
+  .ios-sheet::before {
+    content: "";
+    display: block;
+    flex-shrink: 0;
+    width: 36px;
+    height: 5px;
+    margin: 6px auto 0;
+    border-radius: 3px;
+    background: var(--color-fill-strong);
+  }
+  @media (min-width: 640px) {
+    .ios-sheet::before {
+      display: none;
+    }
+  }
+  .ios-sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 20px 8px;
+  }
+  .ios-sheet-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+  }
+  .ios-sheet-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: var(--color-fill);
+    color: var(--color-text-secondary);
+    font-size: 20px;
+    line-height: 1;
+    transition: opacity 0.15s ease;
+  }
+  .ios-sheet-close:active {
+    opacity: 0.6;
+  }
+
+  /* ---- segmented control ------------------------------------------------ */
+  .ios-segmented {
+    display: flex;
+    padding: 2px;
+    border-radius: 9px;
+    background: var(--color-fill);
+  }
+  .ios-segment {
+    flex: 1;
+    padding: 6px 8px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .ios-segment[aria-selected="true"] {
+    background: var(--color-segment);
+    font-weight: 600;
+    box-shadow:
+      0 3px 8px rgba(0, 0, 0, 0.12),
+      0 3px 1px rgba(0, 0, 0, 0.04);
+  }
+
+  /* ---- context menu (popover) -------------------------------------------- */
+  .ios-menu {
+    overflow: hidden;
+    border-radius: 14px;
+    background: var(--color-bar);
+    -webkit-backdrop-filter: saturate(180%) blur(30px);
+    backdrop-filter: saturate(180%) blur(30px);
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.22),
+      0 0 0 0.5px var(--color-border-divider);
+    animation: ios-pop 0.16s ease-out;
+    transform-origin: top right;
+  }
+  .ios-menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    padding: 0 16px;
+    text-align: left;
+    font-size: 17px;
+    color: var(--color-text-primary);
+  }
+  .ios-menu-item + .ios-menu-item {
+    border-top: 0.5px solid var(--color-border-divider);
+  }
+  .ios-menu-item:active {
+    background: var(--color-fill);
+  }
+  .ios-menu-item.destructive {
+    color: var(--color-danger-text);
+  }
+
+  /* ---- grouped lists --------------------------------------------------- */
+  .ios-group {
+    margin: 0 16px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--color-bg-row);
+  }
+  .ios-group > * + * {
+    position: relative;
+  }
+  .ios-group > * + *::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 0;
+    height: 0.5px;
+    background: var(--color-border-divider);
+  }
+  /* label + borderless input row inside an .ios-group (Settings-style form) */
+  .ios-row-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    min-height: 48px;
+    font-size: 17px;
+  }
+  .ios-row-field > span {
+    width: 92px;
+    flex-shrink: 0;
+    color: var(--color-text-primary);
+  }
+  .ios-row-field > input {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    background: transparent;
+    padding: 12px 0;
+    font-size: 17px;
+    color: var(--color-text-primary);
+    outline: none;
+    caret-color: var(--color-accent);
+  }
+  .ios-row-field > input::placeholder {
+    color: var(--color-text-muted);
+  }
+  .ios-empty {
+    margin: 0 16px;
+    border-radius: 12px;
+    background: var(--color-bg-row);
+    padding: 14px 16px;
+    font-size: 15px;
+    color: var(--color-text-secondary);
+  }
+  .ios-section-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+  }
+}
+
+@keyframes ios-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ios-pop {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+}
+@keyframes ios-sheet-in {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ios-backdrop,
+  .ios-sheet,
+  .ios-menu {
+    animation: none;
+  }
 }

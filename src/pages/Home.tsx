@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import plusIcon from '../assets/icon-plus.svg'
 import { AddClientDialog } from '../components/AddClientDialog'
 import { TodoRow } from '../components/company/TodoRow'
 import { EditClientDialog } from '../components/EditClientDialog'
 import { EmailChaseModal } from '../components/EmailChaseModal'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
+import { PlusIcon } from '../components/icons'
 import { OnboardingBadge } from '../components/OnboardingBadge'
 import { RowMenu } from '../components/RowMenu'
 import { archiveRow } from '../lib/archive'
@@ -26,9 +26,10 @@ export function Home() {
   const [todoWarning, setTodoWarning] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
-  const [chaseTarget, setChaseTarget] = useState<{ todo: Todo; contacts: ClientContact[] } | null>(
-    null,
-  )
+  const [chaseTarget, setChaseTarget] = useState<{
+    todo: Todo
+    contacts: ClientContact[]
+  } | null>(null)
 
   const loadClients = useCallback(async () => {
     const { data, error } = await supabase
@@ -91,61 +92,65 @@ export function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
-      <div className="sticky top-0 z-20">
-        <Header />
-        <div className="mx-auto flex w-full max-w-[600px] bg-bg-white">
-          <TabButton active={tab === 'dashboard'} onClick={() => setTab('dashboard')}>
-            Dashboard
-          </TabButton>
-          <TabButton active={tab === 'todo'} onClick={() => setTab('todo')}>
-            Todo{todos.length > 0 ? ` (${todos.length})` : ''}
-          </TabButton>
+      <div className="ios-bar sticky top-0 z-30 border-b-[0.5px] border-border-divider pt-[env(safe-area-inset-top)]">
+        <Header bare />
+        <div className="mx-auto w-full max-w-[600px] px-4 pb-2.5">
+          <div role="tablist" className="ios-segmented">
+            <SegmentButton selected={tab === 'dashboard'} onClick={() => setTab('dashboard')}>
+              Dashboard
+            </SegmentButton>
+            <SegmentButton selected={tab === 'todo'} onClick={() => setTab('todo')}>
+              Todo{todos.length > 0 ? ` (${todos.length})` : ''}
+            </SegmentButton>
+          </div>
         </div>
       </div>
 
       <div className="mx-auto flex w-full max-w-[600px] flex-1 flex-col">
         {tab === 'dashboard' ? (
           <>
-            <div className="flex items-center gap-8 px-6 pt-6">
-              <h1 className="flex-1 py-4 text-[26px] font-bold tracking-[-0.52px] text-text-primary">
+            <div className="flex items-center justify-between pl-5 pr-2 pb-1 pt-4">
+              <h1 className="text-[34px] font-bold leading-[1.12] tracking-[-0.03em] text-text-primary">
                 Clients
               </h1>
               <button
                 type="button"
                 onClick={() => setDialogOpen(true)}
                 aria-label="Add client"
-                className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border-button"
+                className="ios-icon-btn"
               >
-                <img src={plusIcon} alt="" className="size-3.5" />
+                <PlusIcon width={26} height={26} />
               </button>
             </div>
 
-            {error && <p className="px-6 text-[14px] text-danger-text">{error}</p>}
+            {error && <p className="px-5 pb-2 text-[15px] text-danger-text">{error}</p>}
 
             {loading ? (
-              <p className="px-6 py-8 text-[14px] text-text-secondary">Loading clients…</p>
+              <p className="px-5 py-8 text-[15px] text-text-secondary">Loading clients…</p>
             ) : clients.length === 0 ? (
-              <div className="px-6 py-12 text-center">
-                <p className="text-[16px] text-text-secondary">No clients yet.</p>
+              <div className="px-6 py-16 text-center">
+                <p className="text-[17px] text-text-secondary">No clients yet.</p>
                 <button
                   type="button"
                   onClick={() => setDialogOpen(true)}
-                  className="mt-4 font-medium text-[#0060e3]"
+                  className="mt-3 text-[17px] font-semibold text-accent active:opacity-60"
                 >
                   Add your first client
                 </button>
               </div>
             ) : (
-              <ul>
+              <ul className="ios-group mt-2">
                 {clients.map((client) => (
-                  <li
-                    key={client.id}
-                    className="flex items-center gap-4 border-t border-border-divider bg-bg-row px-6 py-3"
-                  >
-                    <Link to={`/clients/${client.id}`} className="flex flex-1 items-center gap-8">
-                      <div className="flex flex-1 flex-col text-[14px] font-semibold tracking-[-0.364px]">
-                        <span className="text-text-primary">{client.company_name}</span>
-                        <span className="font-normal text-text-secondary">
+                  <li key={client.id} className="flex items-center gap-2 py-1 pl-4 pr-1">
+                    <Link
+                      to={`/clients/${client.id}`}
+                      className="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 py-2 active:opacity-60"
+                    >
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate text-[17px] font-medium text-text-primary">
+                          {client.company_name}
+                        </span>
+                        <span className="text-[15px] text-text-secondary">
                           {client.ol_number ?? '—'}
                         </span>
                       </div>
@@ -162,26 +167,29 @@ export function Home() {
             )}
           </>
         ) : loading ? (
-          <p className="px-6 py-8 text-[14px] text-text-secondary">Loading todos…</p>
+          <p className="px-5 py-8 text-[15px] text-text-secondary">Loading todos…</p>
         ) : (
           <>
-            {todoWarning && (
-              <p className="px-6 pt-4 text-[14px] text-danger-text">{todoWarning}</p>
-            )}
+            <h1 className="px-5 pb-1 pt-4 text-[34px] font-bold leading-[1.12] tracking-[-0.03em] text-text-primary">
+              Todo
+            </h1>
+            {todoWarning && <p className="px-5 pb-2 text-[15px] text-danger-text">{todoWarning}</p>}
             {todos.length === 0 ? (
-              <p className="px-6 py-12 text-center text-[16px] text-text-secondary">
+              <p className="px-6 py-16 text-center text-[17px] text-text-secondary">
                 No open items. Nice work.
               </p>
             ) : (
-              todos.map((todo) => (
-                <TodoRow
-                  key={todo.id}
-                  todo={todo}
-                  href={todoTargets.get(todo.id)?.href ?? `/clients/${todo.client_id}`}
-                  clientName={clientNameById.get(todo.client_id)}
-                  onOpenChase={handleOpenChase}
-                />
-              ))
+              <div className="ios-group mt-2">
+                {todos.map((todo) => (
+                  <TodoRow
+                    key={todo.id}
+                    todo={todo}
+                    href={todoTargets.get(todo.id)?.href ?? `/clients/${todo.client_id}`}
+                    clientName={clientNameById.get(todo.client_id)}
+                    onOpenChase={handleOpenChase}
+                  />
+                ))}
+              </div>
             )}
           </>
         )}
@@ -226,27 +234,24 @@ export function Home() {
   )
 }
 
-function TabButton({
-  active,
+function SegmentButton({
+  selected,
   onClick,
   children,
 }: {
-  active: boolean
+  selected: boolean
   onClick: () => void
   children: React.ReactNode
 }) {
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={selected}
       onClick={onClick}
-      className="flex flex-1 flex-col items-center gap-3 pt-3"
+      className="ios-segment"
     >
-      <span
-        className={`text-[16px] font-medium ${active ? 'text-text-primary' : 'text-text-secondary'}`}
-      >
-        {children}
-      </span>
-      <div className={`h-[3px] w-full ${active ? 'btn-primary' : 'bg-transparent'}`} />
+      {children}
     </button>
   )
 }

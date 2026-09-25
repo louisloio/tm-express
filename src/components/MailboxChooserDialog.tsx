@@ -12,16 +12,11 @@ export function MailboxChooserDialog({
   connecting,
 }: MailboxChooserDialogProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="flex w-full max-w-[420px] flex-col overflow-y-auto rounded-t-2xl bg-bg-white sm:rounded-2xl">
-        <div className="flex items-center justify-between border-b border-border-divider px-6 py-4">
-          <h2 className="text-[18px] font-semibold text-text-primary">Connect a mailbox</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="text-[20px] leading-none text-text-secondary"
-          >
+    <div className="ios-backdrop">
+      <div className="ios-sheet">
+        <div className="ios-sheet-header">
+          <h2 className="ios-sheet-title">Connect a mailbox</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="ios-sheet-close">
             ×
           </button>
         </div>
@@ -31,7 +26,7 @@ export function MailboxChooserDialog({
             type="button"
             onClick={() => onChooseOAuth('google')}
             disabled={!!connecting}
-            className="flex items-center justify-center gap-2 rounded-lg border border-border-button bg-bg-white px-6 py-3 text-[15px] font-medium text-text-primary disabled:opacity-60"
+            className="ios-btn-secondary"
           >
             {connecting === 'google' ? 'Connecting…' : 'Connect Gmail'}
           </button>
@@ -46,7 +41,7 @@ export function MailboxChooserDialog({
             type="button"
             onClick={onChooseManual}
             disabled={!!connecting}
-            className="btn-primary rounded-lg px-6 py-3 text-[15px] font-medium text-white disabled:opacity-60"
+            className="ios-btn-primary"
           >
             Enter mail server details manually
           </button>

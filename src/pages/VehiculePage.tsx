@@ -4,7 +4,6 @@ import { AddDocumentDialog } from '../components/AddDocumentDialog'
 import { AddVehicleDialog } from '../components/AddVehicleDialog'
 import { DocumentRow } from '../components/company/DocumentRow'
 import { Footer } from '../components/Footer'
-import { Header } from '../components/Header'
 import { InlineLabel } from '../components/InlineLabel'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
@@ -16,7 +15,10 @@ import type { Document, Vehicle } from '../types/database'
 const DOC_TYPES = ['PMI', 'Brake test', 'MOT', 'VED', 'Insurance'] as const
 
 export function VehiculePage() {
-  const { clientId, vehicleId } = useParams<{ clientId: string; vehicleId: string }>()
+  const { clientId, vehicleId } = useParams<{
+    clientId: string
+    vehicleId: string
+  }>()
   const navigate = useNavigate()
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
   const [documents, setDocuments] = useState<Document[]>([])
@@ -28,7 +30,12 @@ export function VehiculePage() {
   const load = useCallback(async () => {
     if (!vehicleId) return
     const [vehicleRes, documentsRes] = await Promise.all([
-      supabase.from('vehicles').select('*').eq('id', vehicleId).is('archived_at', null).maybeSingle(),
+      supabase
+        .from('vehicles')
+        .select('*')
+        .eq('id', vehicleId)
+        .is('archived_at', null)
+        .maybeSingle(),
       supabase
         .from('documents')
         .select('*')
@@ -67,8 +74,7 @@ export function VehiculePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-bg-app">
-        <Header />
-        <p className="px-6 py-8 text-[14px] text-text-secondary">Loading…</p>
+        <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
   }
@@ -76,9 +82,8 @@ export function VehiculePage() {
   if (error || !vehicle) {
     return (
       <div className="flex min-h-screen flex-col bg-bg-app">
-        <Header />
         <TopSubPage backTo={backTo} title="Vehicle" />
-        <p className="px-6 py-8 text-[14px] text-danger-text">{error ?? 'Vehicle not found.'}</p>
+        <p className="px-5 py-8 text-[15px] text-danger-text">{error ?? 'Vehicle not found.'}</p>
       </div>
     )
   }
@@ -92,7 +97,6 @@ export function VehiculePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
-      <Header />
       <TopSubPage
         backTo={backTo}
         title={vehicle.registration}
@@ -102,7 +106,7 @@ export function VehiculePage() {
       />
 
       <div className="mx-auto w-full max-w-[600px] flex-1">
-        <div className="flex flex-col gap-2 px-6 py-4">
+        <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px]">
           <InlineLabel label="Registration" value={vehicle.registration} />
           <InlineLabel label="Type" value={vehicle.type ?? '—'} />
         </div>
@@ -112,7 +116,7 @@ export function VehiculePage() {
           addLabel="Upload document"
           onAdd={() => setUploadOpen(true)}
         />
-        <div className="flex flex-col gap-1 px-6 pb-4">
+        <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px] !mt-0">
           {DOC_TYPES.map((type) => {
             const doc = latestByType.get(type)
             const status = getDocSlotStatus(doc)
@@ -130,14 +134,16 @@ export function VehiculePage() {
         {documents.length > 0 && (
           <>
             <SectionTitle title="Document history" />
-            {documents.map((doc) => (
-              <DocumentRow
-                key={doc.id}
-                doc={doc}
-                parentLabel={vehicle.registration}
-                onArchive={() => handleArchiveDocument(doc.id)}
-              />
-            ))}
+            <div className="ios-group">
+              {documents.map((doc) => (
+                <DocumentRow
+                  key={doc.id}
+                  doc={doc}
+                  parentLabel={vehicle.registration}
+                  onArchive={() => handleArchiveDocument(doc.id)}
+                />
+              ))}
+            </div>
           </>
         )}
       </div>

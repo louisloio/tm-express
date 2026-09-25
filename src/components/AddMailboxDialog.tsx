@@ -59,23 +59,16 @@ export function AddMailboxDialog({ mailbox, onClose, onSaved }: AddMailboxDialog
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-y-auto rounded-t-2xl bg-bg-white sm:rounded-2xl">
-        <div className="flex items-center justify-between border-b border-border-divider px-6 py-4">
-          <h2 className="text-[18px] font-semibold text-text-primary">
-            {isEditing ? 'Edit mailbox' : 'Connect a mailbox'}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="text-[20px] leading-none text-text-secondary"
-          >
+    <div className="ios-backdrop">
+      <div className="ios-sheet">
+        <div className="ios-sheet-header">
+          <h2 className="ios-sheet-title">{isEditing ? 'Edit mailbox' : 'Connect a mailbox'}</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="ios-sheet-close">
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 pb-5 pt-3">
           <p className="text-[13px] text-text-secondary">
             Chase emails will be sent literally from this address, using your mail provider's SMTP
             server. Your credentials are encrypted and only used server-side to send mail — TM
@@ -83,20 +76,18 @@ export function AddMailboxDialog({ mailbox, onClose, onSaved }: AddMailboxDialog
           </p>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">Label</label>
+            <label className="ios-label">Label</label>
             <input
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Optional — e.g. Work"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Email address
-            </label>
+            <label className="ios-label">Email address</label>
             <input
               type="email"
               required
@@ -104,32 +95,30 @@ export function AddMailboxDialog({ mailbox, onClose, onSaved }: AddMailboxDialog
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@yourcompany.com"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-                SMTP host
-              </label>
+              <label className="ios-label">SMTP host</label>
               <input
                 type="text"
                 required
                 value={smtpHost}
                 onChange={(e) => setSmtpHost(e.target.value)}
                 placeholder="mail.yourcompany.com"
-                className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+                className="ios-field"
               />
             </div>
             <div className="w-24">
-              <label className="mb-1 block text-[14px] font-medium text-text-secondary">Port</label>
+              <label className="ios-label">Port</label>
               <input
                 type="number"
                 required
                 value={smtpPort}
                 onChange={(e) => setSmtpPort(e.target.value)}
-                className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-to"
+                className="ios-field"
               />
             </div>
           </div>
@@ -145,29 +134,25 @@ export function AddMailboxDialog({ mailbox, onClose, onSaved }: AddMailboxDialog
           </label>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Username
-            </label>
+            <label className="ios-label">Username</label>
             <input
               type="text"
               required
               value={smtpUsername}
               onChange={(e) => setSmtpUsername(e.target.value)}
               placeholder="Usually the same as your email address"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Password
-            </label>
+            <label className="ios-label">Password</label>
             <input
               type="password"
               value={smtpPassword}
               onChange={(e) => setSmtpPassword(e.target.value)}
               placeholder={isEditing ? 'Leave blank to keep current password' : 'Required'}
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
             {gmailHint && (
               <p className="mt-1 text-[12px] text-text-tertiary">
@@ -184,15 +169,11 @@ export function AddMailboxDialog({ mailbox, onClose, onSaved }: AddMailboxDialog
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="flex-1 rounded-lg border border-border-button bg-bg-white px-6 py-3 text-[15px] font-medium text-text-primary disabled:opacity-60"
+              className="flex-1 ios-btn-secondary"
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-primary flex-1 rounded-lg px-6 py-3 text-[15px] font-medium text-white disabled:opacity-60"
-            >
+            <button type="submit" disabled={submitting} className="flex-1 ios-btn-primary">
               {submitting ? 'Verifying…' : isEditing ? 'Save changes' : 'Connect mailbox'}
             </button>
           </div>

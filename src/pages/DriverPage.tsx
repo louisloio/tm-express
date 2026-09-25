@@ -4,7 +4,6 @@ import { AddDocumentDialog } from '../components/AddDocumentDialog'
 import { AddDriverDialog } from '../components/AddDriverDialog'
 import { DocumentRow } from '../components/company/DocumentRow'
 import { Footer } from '../components/Footer'
-import { Header } from '../components/Header'
 import { InlineLabel } from '../components/InlineLabel'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
@@ -16,7 +15,10 @@ import type { Document, Driver } from '../types/database'
 const DOC_TYPES = ['Licence check', 'CPC'] as const
 
 export function DriverPage() {
-  const { clientId, driverId } = useParams<{ clientId: string; driverId: string }>()
+  const { clientId, driverId } = useParams<{
+    clientId: string
+    driverId: string
+  }>()
   const navigate = useNavigate()
   const [driver, setDriver] = useState<Driver | null>(null)
   const [documents, setDocuments] = useState<Document[]>([])
@@ -67,8 +69,7 @@ export function DriverPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-bg-app">
-        <Header />
-        <p className="px-6 py-8 text-[14px] text-text-secondary">Loading…</p>
+        <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
   }
@@ -76,9 +77,8 @@ export function DriverPage() {
   if (error || !driver) {
     return (
       <div className="flex min-h-screen flex-col bg-bg-app">
-        <Header />
         <TopSubPage backTo={backTo} title="Driver" />
-        <p className="px-6 py-8 text-[14px] text-danger-text">{error ?? 'Driver not found.'}</p>
+        <p className="px-5 py-8 text-[15px] text-danger-text">{error ?? 'Driver not found.'}</p>
       </div>
     )
   }
@@ -92,7 +92,6 @@ export function DriverPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
-      <Header />
       <TopSubPage
         backTo={backTo}
         title={driver.name}
@@ -102,7 +101,7 @@ export function DriverPage() {
       />
 
       <div className="mx-auto w-full max-w-[600px] flex-1">
-        <div className="flex flex-col gap-2 px-6 py-4">
+        <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px]">
           <InlineLabel label="Name" value={driver.name} />
         </div>
 
@@ -111,7 +110,7 @@ export function DriverPage() {
           addLabel="Upload document"
           onAdd={() => setUploadOpen(true)}
         />
-        <div className="flex flex-col gap-1 px-6 pb-4">
+        <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px] !mt-0">
           {DOC_TYPES.map((type) => {
             const doc = latestByType.get(type)
             const status = getDocSlotStatus(doc)
@@ -129,14 +128,16 @@ export function DriverPage() {
         {documents.length > 0 && (
           <>
             <SectionTitle title="Document history" />
-            {documents.map((doc) => (
-              <DocumentRow
-                key={doc.id}
-                doc={doc}
-                parentLabel={driver.name}
-                onArchive={() => handleArchiveDocument(doc.id)}
-              />
-            ))}
+            <div className="ios-group">
+              {documents.map((doc) => (
+                <DocumentRow
+                  key={doc.id}
+                  doc={doc}
+                  parentLabel={driver.name}
+                  onArchive={() => handleArchiveDocument(doc.id)}
+                />
+              ))}
+            </div>
           </>
         )}
       </div>

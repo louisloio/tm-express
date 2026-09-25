@@ -13,7 +13,6 @@ import { VehicleRow } from '../components/company/VehicleRow'
 import { EditClientDialog } from '../components/EditClientDialog'
 import { EmailChaseModal } from '../components/EmailChaseModal'
 import { Footer } from '../components/Footer'
-import { Header } from '../components/Header'
 import { OnboardingBadge } from '../components/OnboardingBadge'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
@@ -80,43 +79,51 @@ export function CompanyPage() {
       )
     }
 
-    const [clientRes, contactsRes, vehiclesRes, driversRes, visitsRes, infringementsRes, documentsRes, todos] =
-      await Promise.all([
-        supabase.from('clients').select('*').eq('id', clientId).is('archived_at', null).maybeSingle(),
-        supabase.from('client_contacts').select('*').eq('client_id', clientId),
-        supabase
-          .from('vehicles')
-          .select('*')
-          .eq('client_id', clientId)
-          .is('archived_at', null)
-          .order('registration'),
-        supabase
-          .from('drivers')
-          .select('*')
-          .eq('client_id', clientId)
-          .is('archived_at', null)
-          .order('name'),
-        supabase
-          .from('visits')
-          .select('*')
-          .eq('client_id', clientId)
-          .is('archived_at', null)
-          .order('date', { ascending: false })
-          .limit(1),
-        supabase
-          .from('infringements')
-          .select('*')
-          .eq('client_id', clientId)
-          .is('archived_at', null)
-          .order('date', { ascending: false }),
-        supabase
-          .from('documents')
-          .select('*')
-          .eq('client_id', clientId)
-          .is('archived_at', null)
-          .order('uploaded_at', { ascending: false }),
-        fetchOpenTodos(clientId),
-      ])
+    const [
+      clientRes,
+      contactsRes,
+      vehiclesRes,
+      driversRes,
+      visitsRes,
+      infringementsRes,
+      documentsRes,
+      todos,
+    ] = await Promise.all([
+      supabase.from('clients').select('*').eq('id', clientId).is('archived_at', null).maybeSingle(),
+      supabase.from('client_contacts').select('*').eq('client_id', clientId),
+      supabase
+        .from('vehicles')
+        .select('*')
+        .eq('client_id', clientId)
+        .is('archived_at', null)
+        .order('registration'),
+      supabase
+        .from('drivers')
+        .select('*')
+        .eq('client_id', clientId)
+        .is('archived_at', null)
+        .order('name'),
+      supabase
+        .from('visits')
+        .select('*')
+        .eq('client_id', clientId)
+        .is('archived_at', null)
+        .order('date', { ascending: false })
+        .limit(1),
+      supabase
+        .from('infringements')
+        .select('*')
+        .eq('client_id', clientId)
+        .is('archived_at', null)
+        .order('date', { ascending: false }),
+      supabase
+        .from('documents')
+        .select('*')
+        .eq('client_id', clientId)
+        .is('archived_at', null)
+        .order('uploaded_at', { ascending: false }),
+      fetchOpenTodos(clientId),
+    ])
 
     const firstError = [
       clientRes.error,
@@ -189,7 +196,6 @@ export function CompanyPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-bg-app">
-        <Header />
         <p className="px-6 py-8 text-[14px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -198,10 +204,9 @@ export function CompanyPage() {
   if (error || !data) {
     return (
       <div className="flex min-h-screen flex-col bg-bg-app">
-        <Header />
         <div className="px-6 py-8">
           <p className="text-[14px] text-danger-text">{error ?? 'Client not found.'}</p>
-          <Link to="/" className="mt-2 inline-block text-[14px] font-medium text-[#0060e3]">
+          <Link to="/" className="mt-2 inline-block text-[14px] font-medium text-accent">
             Back to clients
           </Link>
         </div>
@@ -209,8 +214,17 @@ export function CompanyPage() {
     )
   }
 
-  const { client, contacts, vehicles, drivers, latestVisit, infringements, documents, todos, todoTargets } =
-    data
+  const {
+    client,
+    contacts,
+    vehicles,
+    drivers,
+    latestVisit,
+    infringements,
+    documents,
+    todos,
+    todoTargets,
+  } = data
 
   const vehicleDocs = latestDocsByParent(documents.filter((d) => d.parent_type === 'vehicle'))
   const driverDocs = latestDocsByParent(documents.filter((d) => d.parent_type === 'driver'))
@@ -232,12 +246,14 @@ export function CompanyPage() {
   function linkedToLabel(inf: Infringement) {
     const parts: string[] = []
     if (inf.driver_id) parts.push(driversById.get(inf.driver_id)?.name ?? 'Unknown driver')
-    if (inf.vehicle_id) parts.push(vehiclesById.get(inf.vehicle_id)?.registration ?? 'Unknown vehicle')
+    if (inf.vehicle_id)
+      parts.push(vehiclesById.get(inf.vehicle_id)?.registration ?? 'Unknown vehicle')
     return parts.length > 0 ? parts.join(' · ') : client.company_name
   }
 
   function parentLabel(doc: Document) {
-    if (doc.parent_type === 'vehicle') return vehiclesById.get(doc.parent_id)?.registration ?? 'Vehicle'
+    if (doc.parent_type === 'vehicle')
+      return vehiclesById.get(doc.parent_id)?.registration ?? 'Vehicle'
     if (doc.parent_type === 'driver') return driversById.get(doc.parent_id)?.name ?? 'Driver'
     if (doc.parent_type === 'client') return client.company_name
     return 'Visit'
@@ -245,7 +261,6 @@ export function CompanyPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
-      <Header />
       <TopSubPage
         backTo="/"
         title={client.company_name}
@@ -254,73 +269,56 @@ export function CompanyPage() {
         archiveLabel="Archive client"
         extraAction={
           documentTodos.length > 0
-            ? { label: 'Chase all outstanding', onClick: () => setDialog({ type: 'chase-all' }) }
+            ? {
+                label: 'Chase all outstanding',
+                onClick: () => setDialog({ type: 'chase-all' }),
+              }
             : undefined
         }
       />
 
       <div className="mx-auto w-full max-w-[600px] flex-1">
         {/* CompanyDetails */}
-        <div className="grid grid-cols-2 gap-4 px-6 py-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-[14px] font-medium text-text-secondary">OL number</span>
-            <span className="text-[14px] font-medium text-text-primary">
-              {client.ol_number ?? '—'}
-            </span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[14px] font-medium text-text-secondary">Contact(s)</span>
-            {contacts.length > 0 ? (
-              contacts.map((c) => (
-                <a
-                  key={c.id}
-                  href={`mailto:${c.email}`}
-                  title={c.email}
-                  className="block truncate text-[14px] font-medium text-[#0060e3]"
-                >
-                  {c.email}
-                </a>
-              ))
-            ) : (
-              <span className="text-[14px] font-medium text-text-primary">—</span>
-            )}
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[14px] font-medium text-text-secondary">Onboarding status</span>
+        <div className="ios-group mt-3">
+          <DetailRow label="OL number">{client.ol_number ?? '—'}</DetailRow>
+          <DetailRow label="Contact(s)">
+            {contacts.length > 0
+              ? contacts.map((c) => (
+                  <a
+                    key={c.id}
+                    href={`mailto:${c.email}`}
+                    title={c.email}
+                    className="block max-w-full truncate text-accent"
+                  >
+                    {c.email}
+                  </a>
+                ))
+              : '—'}
+          </DetailRow>
+          <DetailRow label="Onboarding">
             <OnboardingBadge status={client.onboarding_status} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[14px] font-medium text-text-secondary">Vehicles</span>
-            <span className="text-[14px] font-medium text-text-primary">{vehicles.length}</span>
-          </div>
-          <div className="col-span-2 flex flex-col gap-1">
-            <span className="text-[14px] font-medium text-text-secondary">Transport manager</span>
-            <span className="text-[14px] font-medium text-text-primary">
-              {client.transport_manager ?? '—'}
-            </span>
-          </div>
-          <div className="col-span-2 flex flex-col gap-1">
-            <span className="text-[14px] font-medium text-text-secondary">Operating centre</span>
-            <span className="text-[14px] font-medium text-text-primary">
-              {client.operating_centre ?? '—'}
-            </span>
-          </div>
+          </DetailRow>
+          <DetailRow label="Vehicles">{vehicles.length}</DetailRow>
+          <DetailRow label="Transport manager">{client.transport_manager ?? '—'}</DetailRow>
+          <DetailRow label="Operating centre">{client.operating_centre ?? '—'}</DetailRow>
         </div>
 
         {/* Todo */}
         <SectionTitle title={`Todo (${todos.length})`} />
-        {todoWarning && <p className="px-6 pb-2 text-[14px] text-danger-text">{todoWarning}</p>}
+        {todoWarning && <p className="px-5 pb-2 text-[15px] text-danger-text">{todoWarning}</p>}
         {todos.length === 0 ? (
-          <p className="px-6 pb-4 text-[14px] text-text-secondary">No open items.</p>
+          <p className="ios-empty">No open items.</p>
         ) : (
-          todos.map((todo) => (
-            <TodoRow
-              key={todo.id}
-              todo={todo}
-              href={todoTargets.get(todo.id)?.href ?? `/clients/${client.id}`}
-              onOpenChase={(t) => setDialog({ type: 'chase-single', todo: t })}
-            />
-          ))
+          <div className="ios-group">
+            {todos.map((todo) => (
+              <TodoRow
+                key={todo.id}
+                todo={todo}
+                href={todoTargets.get(todo.id)?.href ?? `/clients/${client.id}`}
+                onOpenChase={(t) => setDialog({ type: 'chase-single', todo: t })}
+              />
+            ))}
+          </div>
         )}
 
         {/* Vehicles */}
@@ -330,18 +328,20 @@ export function CompanyPage() {
           onAdd={() => setDialog({ type: 'vehicle' })}
         />
         {vehicles.length === 0 ? (
-          <p className="px-6 pb-4 text-[14px] text-text-secondary">No vehicles yet.</p>
+          <p className="ios-empty">No vehicles yet.</p>
         ) : (
-          vehicles.map((v) => (
-            <VehicleRow
-              key={v.id}
-              clientId={client.id}
-              vehicle={v}
-              docsByType={vehicleDocs.get(v.id) ?? new Map()}
-              onEdit={() => setDialog({ type: 'vehicle', vehicle: v })}
-              onArchive={() => handleArchiveVehicle(v.id)}
-            />
-          ))
+          <div className="ios-group">
+            {vehicles.map((v) => (
+              <VehicleRow
+                key={v.id}
+                clientId={client.id}
+                vehicle={v}
+                docsByType={vehicleDocs.get(v.id) ?? new Map()}
+                onEdit={() => setDialog({ type: 'vehicle', vehicle: v })}
+                onArchive={() => handleArchiveVehicle(v.id)}
+              />
+            ))}
+          </div>
         )}
 
         {/* Drivers */}
@@ -351,19 +351,21 @@ export function CompanyPage() {
           onAdd={() => setDialog({ type: 'driver' })}
         />
         {drivers.length === 0 ? (
-          <p className="px-6 pb-4 text-[14px] text-text-secondary">No drivers yet.</p>
+          <p className="ios-empty">No drivers yet.</p>
         ) : (
-          drivers.map((d) => (
-            <DriverRow
-              key={d.id}
-              clientId={client.id}
-              driver={d}
-              docsByType={driverDocs.get(d.id) ?? new Map()}
-              infringementCount={infringementCountByDriver.get(d.id) ?? 0}
-              onEdit={() => setDialog({ type: 'driver', driver: d })}
-              onArchive={() => handleArchiveDriver(d.id)}
-            />
-          ))
+          <div className="ios-group">
+            {drivers.map((d) => (
+              <DriverRow
+                key={d.id}
+                clientId={client.id}
+                driver={d}
+                docsByType={driverDocs.get(d.id) ?? new Map()}
+                infringementCount={infringementCountByDriver.get(d.id) ?? 0}
+                onEdit={() => setDialog({ type: 'driver', driver: d })}
+                onArchive={() => handleArchiveDriver(d.id)}
+              />
+            ))}
+          </div>
         )}
 
         {/* Last Visit */}
@@ -373,14 +375,16 @@ export function CompanyPage() {
           onAdd={() => setDialog({ type: 'visit' })}
         />
         {latestVisit ? (
-          <LastVisitRow
-            clientId={client.id}
-            visit={latestVisit}
-            onEdit={() => setDialog({ type: 'visit', visit: latestVisit })}
-            onArchive={() => handleArchiveVisit(latestVisit.id)}
-          />
+          <div className="ios-group">
+            <LastVisitRow
+              clientId={client.id}
+              visit={latestVisit}
+              onEdit={() => setDialog({ type: 'visit', visit: latestVisit })}
+              onArchive={() => handleArchiveVisit(latestVisit.id)}
+            />
+          </div>
         ) : (
-          <p className="px-6 pb-4 text-[14px] text-text-secondary">No visits logged yet.</p>
+          <p className="ios-empty">No visits logged yet.</p>
         )}
 
         {/* Infringements */}
@@ -390,33 +394,37 @@ export function CompanyPage() {
           onAdd={() => setDialog({ type: 'infringement' })}
         />
         {infringements.length === 0 ? (
-          <p className="px-6 pb-4 text-[14px] text-text-secondary">No infringements logged.</p>
+          <p className="ios-empty">No infringements logged.</p>
         ) : (
-          infringements.map((inf) => (
-            <InfringementRow
-              key={inf.id}
-              clientId={client.id}
-              infringement={inf}
-              linkedTo={linkedToLabel(inf)}
-              onEdit={() => setDialog({ type: 'infringement', infringement: inf })}
-              onArchive={() => handleArchiveInfringement(inf.id)}
-            />
-          ))
+          <div className="ios-group">
+            {infringements.map((inf) => (
+              <InfringementRow
+                key={inf.id}
+                clientId={client.id}
+                infringement={inf}
+                linkedTo={linkedToLabel(inf)}
+                onEdit={() => setDialog({ type: 'infringement', infringement: inf })}
+                onArchive={() => handleArchiveInfringement(inf.id)}
+              />
+            ))}
+          </div>
         )}
 
         {/* Documents */}
         <SectionTitle title={`Documents (${documents.length})`} />
         {documents.length === 0 ? (
-          <p className="px-6 pb-4 text-[14px] text-text-secondary">No documents uploaded yet.</p>
+          <p className="ios-empty">No documents uploaded yet.</p>
         ) : (
-          documents.map((doc) => (
-            <DocumentRow
-              key={doc.id}
-              doc={doc}
-              parentLabel={parentLabel(doc)}
-              onArchive={() => handleArchiveDocument(doc.id)}
-            />
-          ))
+          <div className="ios-group">
+            {documents.map((doc) => (
+              <DocumentRow
+                key={doc.id}
+                doc={doc}
+                parentLabel={parentLabel(doc)}
+                onArchive={() => handleArchiveDocument(doc.id)}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -506,6 +514,18 @@ export function CompanyPage() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+/** iOS "value" cell: secondary label on the left, value trailing. */
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4 px-4 py-[11px] text-[17px]">
+      <span className="shrink-0 text-text-primary">{label}</span>
+      <div className="flex min-w-0 flex-1 flex-col items-end text-right text-text-secondary">
+        {children}
+      </div>
     </div>
   )
 }

@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { buildAllOutstandingTemplate, buildSingleTodoTemplate, recordChase, sendChaseEmail } from '../lib/emailChase'
+import {
+  buildAllOutstandingTemplate,
+  buildSingleTodoTemplate,
+  recordChase,
+  sendChaseEmail,
+} from '../lib/emailChase'
 import type { ClientContact, EmailChaseScope, Todo } from '../types/database'
 
 interface EmailChaseModalProps {
@@ -96,29 +101,20 @@ export function EmailChaseModal({
 
   if (mailboxes.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-        <div className="flex w-full max-w-[420px] flex-col overflow-y-auto rounded-t-2xl bg-bg-white sm:rounded-2xl">
-          <div className="flex items-center justify-between border-b border-border-divider px-6 py-4">
-            <h2 className="text-[18px] font-semibold text-text-primary">Chase</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="text-[20px] leading-none text-text-secondary"
-            >
+      <div className="ios-backdrop">
+        <div className="ios-sheet">
+          <div className="ios-sheet-header">
+            <h2 className="ios-sheet-title">Chase</h2>
+            <button type="button" onClick={onClose} aria-label="Close" className="ios-sheet-close">
               ×
             </button>
           </div>
-          <div className="flex flex-col gap-4 p-6">
+          <div className="flex flex-col gap-4 px-5 pb-5 pt-3">
             <p className="text-[14px] text-text-secondary">
               Connect a mailbox in your profile to send chase emails — chases are sent literally
               from your own address via your mail server, so there's nothing to send from yet.
             </p>
-            <Link
-              to="/profile"
-              onClick={onClose}
-              className="btn-primary rounded-lg px-6 py-3 text-center text-[15px] font-medium text-white"
-            >
+            <Link to="/profile" onClick={onClose} className="ios-btn-primary">
               Go to profile
             </Link>
           </div>
@@ -128,29 +124,22 @@ export function EmailChaseModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="flex max-h-[90vh] w-full max-w-[480px] flex-col overflow-y-auto rounded-t-2xl bg-bg-white sm:rounded-2xl">
-        <div className="flex items-center justify-between border-b border-border-divider px-6 py-4">
-          <h2 className="text-[18px] font-semibold text-text-primary">Chase</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="text-[20px] leading-none text-text-secondary"
-          >
+    <div className="ios-backdrop">
+      <div className="ios-sheet">
+        <div className="ios-sheet-header">
+          <h2 className="ios-sheet-title">Chase</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="ios-sheet-close">
             ×
           </button>
         </div>
 
-        <div className="flex flex-col gap-4 p-6">
+        <div className="flex flex-col gap-4 px-5 pb-5 pt-3">
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              From
-            </label>
+            <label className="ios-label">From</label>
             <select
               value={mailboxId}
               onChange={(e) => setMailboxId(e.target.value)}
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             >
               {mailboxes.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -165,37 +154,33 @@ export function EmailChaseModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">To</label>
+            <label className="ios-label">To</label>
             <input
               type="text"
               value={to}
               onChange={(e) => setTo(e.target.value)}
               placeholder="email@example.com, another@example.com"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Subject
-            </label>
+            <label className="ios-label">Subject</label>
             <input
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Content
-            </label>
+            <label className="ios-label">Content</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={10}
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[14px] text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
@@ -206,7 +191,7 @@ export function EmailChaseModal({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="flex-1 rounded-lg border border-border-button bg-bg-white px-6 py-3 text-[15px] font-medium text-text-primary disabled:opacity-60"
+              className="flex-1 ios-btn-secondary"
             >
               Discard
             </button>
@@ -214,7 +199,7 @@ export function EmailChaseModal({
               type="button"
               onClick={handleChase}
               disabled={submitting}
-              className="btn-primary flex-1 rounded-lg px-6 py-3 text-[15px] font-medium text-white disabled:opacity-60"
+              className="flex-1 ios-btn-primary"
             >
               {submitting ? 'Sending…' : 'Chase'}
             </button>

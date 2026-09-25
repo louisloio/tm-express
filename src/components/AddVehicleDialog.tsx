@@ -24,7 +24,10 @@ export function AddVehicleDialog({ clientId, vehicle, onClose, onCreated }: AddV
     const { error } = isEditing
       ? await supabase
           .from('vehicles')
-          .update({ registration: registration.trim(), type: type.trim() || null })
+          .update({
+            registration: registration.trim(),
+            type: type.trim() || null,
+          })
           .eq('id', vehicle.id)
       : await supabase.from('vehicles').insert({
           client_id: clientId,
@@ -41,27 +44,18 @@ export function AddVehicleDialog({ clientId, vehicle, onClose, onCreated }: AddV
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-y-auto rounded-t-2xl bg-bg-white sm:rounded-2xl">
-        <div className="flex items-center justify-between border-b border-border-divider px-6 py-4">
-          <h2 className="text-[18px] font-semibold text-text-primary">
-            {isEditing ? 'Edit vehicle' : 'Add vehicle'}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="text-[20px] leading-none text-text-secondary"
-          >
+    <div className="ios-backdrop">
+      <div className="ios-sheet">
+        <div className="ios-sheet-header">
+          <h2 className="ios-sheet-title">{isEditing ? 'Edit vehicle' : 'Add vehicle'}</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="ios-sheet-close">
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 pb-5 pt-3">
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Registration
-            </label>
+            <label className="ios-label">Registration</label>
             <input
               type="text"
               required
@@ -69,36 +63,28 @@ export function AddVehicleDialog({ clientId, vehicle, onClose, onCreated }: AddV
               value={registration}
               onChange={(e) => setRegistration(e.target.value)}
               placeholder="e.g. AB19 CDE"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">Type</label>
+            <label className="ios-label">Type</label>
             <input
               type="text"
               value={type}
               onChange={(e) => setType(e.target.value)}
               placeholder="Optional — e.g. Rigid, Artic, Trailer"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           {error && <p className="text-[14px] text-danger-text">{error}</p>}
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-lg border border-border-button bg-bg-white px-6 py-3 text-[15px] font-medium text-text-primary"
-            >
+            <button type="button" onClick={onClose} className="flex-1 ios-btn-secondary">
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-primary flex-1 rounded-lg px-6 py-3 text-[15px] font-medium text-white disabled:opacity-60"
-            >
+            <button type="submit" disabled={submitting} className="flex-1 ios-btn-primary">
               {submitting ? 'Saving…' : isEditing ? 'Save changes' : 'Add vehicle'}
             </button>
           </div>

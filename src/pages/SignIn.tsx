@@ -25,62 +25,49 @@ export function SignIn() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-bg-app pt-16">
-      <img src={logo} alt="TM Express" className="h-[18px] w-auto" />
-      <form onSubmit={handleSubmit} className="flex w-full max-w-[354px] flex-col p-6">
-        <div className="flex gap-[10px]">
-          <div className="flex flex-col gap-[10px] pt-[7px]">
-            <label className="flex h-12 items-center text-[16px] font-medium text-text-secondary">
-              Email
-            </label>
-            <label className="flex h-12 items-center text-[16px] font-medium text-text-secondary">
-              Password
-            </label>
-          </div>
-          <div className="flex flex-1 flex-col gap-[10px]">
+    <div className="flex min-h-screen flex-col items-center bg-bg-app pt-[calc(env(safe-area-inset-top)+64px)]">
+      <img src={logo} alt="TM Express" className="h-[22px] w-auto" />
+      <form onSubmit={handleSubmit} className="flex w-full max-w-[420px] flex-col px-4 py-8">
+        <div className="ios-group !mx-0">
+          <label className="ios-row-field">
+            <span>Email</span>
             <input
               type="email"
               required
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-6 py-[15px] text-[16px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              placeholder="name@example.com"
             />
+          </label>
+          <label className="ios-row-field">
+            <span>Password</span>
             <input
               type="password"
               required
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-6 py-[15px] text-[16px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              placeholder="Required"
             />
-          </div>
+          </label>
         </div>
 
-        <Link
-          to="/forgot-password"
-          className="self-end pt-3 text-[14px] font-medium text-[#0060e3]"
-        >
+        <Link to="/forgot-password" className="self-end pt-3 px-1 text-[15px] text-accent">
           Forgot password?
         </Link>
 
-        {error && <p className="mt-4 text-[14px] text-danger-text">{error}</p>}
+        {error && <p className="mt-3 px-1 text-[15px] text-danger-text">{error}</p>}
 
-        <div className="flex flex-col gap-[10px] pt-8">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="btn-primary w-full rounded-lg px-12 py-[15px] text-[16px] font-medium text-white disabled:opacity-60"
-          >
+        <div className="flex flex-col gap-[10px] pt-6">
+          <button type="submit" disabled={submitting} className="ios-btn-primary w-full">
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
         </div>
 
-        <p className="py-6 text-[16px] text-text-primary">
+        <p className="py-6 text-center text-[17px] text-text-primary">
           First time with us?{' '}
-          <Link to="/sign-up" className="font-medium text-[#0060e3]">
+          <Link to="/sign-up" className="font-semibold text-accent">
             Create an account
           </Link>
         </p>

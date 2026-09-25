@@ -96,10 +96,10 @@ export function EditClientDialog({ client, onClose, onSaved }: EditClientDialogP
       if (!email) continue
       if (c.id) {
         ops.push(
-          supabase.from('client_contacts').update({ name: c.name.trim() || null, email }).eq(
-            'id',
-            c.id,
-          ),
+          supabase
+            .from('client_contacts')
+            .update({ name: c.name.trim() || null, email })
+            .eq('id', c.id),
         )
       } else {
         ops.push(
@@ -123,95 +123,78 @@ export function EditClientDialog({ client, onClose, onSaved }: EditClientDialogP
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-y-auto rounded-t-2xl bg-bg-white sm:rounded-2xl">
-        <div className="flex items-center justify-between border-b border-border-divider px-6 py-4">
-          <h2 className="text-[18px] font-semibold text-text-primary">Edit client</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="text-[20px] leading-none text-text-secondary"
-          >
+    <div className="ios-backdrop">
+      <div className="ios-sheet">
+        <div className="ios-sheet-header">
+          <h2 className="ios-sheet-title">Edit client</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="ios-sheet-close">
             ×
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 pb-5 pt-3">
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Company name
-            </label>
+            <label className="ios-label">Company name</label>
             <input
               type="text"
               required
               autoFocus
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              OL number
-            </label>
+            <label className="ios-label">OL number</label>
             <input
               type="text"
               value={olNumber}
               onChange={(e) => setOlNumber(e.target.value)}
               placeholder="Optional"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Address
-            </label>
+            <label className="ios-label">Address</label>
             <input
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Optional"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Operating centre
-            </label>
+            <label className="ios-label">Operating centre</label>
             <input
               type="text"
               value={operatingCentre}
               onChange={(e) => setOperatingCentre(e.target.value)}
               placeholder="Optional"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Transport manager
-            </label>
+            <label className="ios-label">Transport manager</label>
             <input
               type="text"
               value={transportManager}
               onChange={(e) => setTransportManager(e.target.value)}
               placeholder="Optional"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Onboarding status
-            </label>
+            <label className="ios-label">Onboarding status</label>
             <select
               value={onboardingStatus}
               onChange={(e) => setOnboardingStatus(e.target.value as OnboardingStatus)}
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-to"
+              className="ios-field"
             >
               <option value="In Progress">In Progress</option>
               <option value="Approved">Approved</option>
@@ -220,13 +203,11 @@ export function EditClientDialog({ client, onClose, onSaved }: EditClientDialogP
 
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="block text-[14px] font-medium text-text-secondary">
-                Contacts
-              </label>
+              <label className="block text-[14px] font-medium text-text-secondary">Contacts</label>
               <button
                 type="button"
                 onClick={addContact}
-                className="text-[13px] font-medium text-[#0060e3]"
+                className="text-[13px] font-medium text-accent"
               >
                 + Add contact
               </button>
@@ -246,7 +227,7 @@ export function EditClientDialog({ client, onClose, onSaved }: EditClientDialogP
                         value={c.name}
                         onChange={(e) => updateContact(i, { name: e.target.value })}
                         placeholder="Name (optional)"
-                        className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-2.5 text-[14px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+                        className="ios-field"
                       />
                       <input
                         type="email"
@@ -254,7 +235,7 @@ export function EditClientDialog({ client, onClose, onSaved }: EditClientDialogP
                         value={c.email}
                         onChange={(e) => updateContact(i, { email: e.target.value })}
                         placeholder="Email"
-                        className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-2.5 text-[14px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
+                        className="ios-field"
                       />
                     </div>
                     <button
@@ -274,17 +255,13 @@ export function EditClientDialog({ client, onClose, onSaved }: EditClientDialogP
           {error && <p className="text-[14px] text-danger-text">{error}</p>}
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-lg border border-border-button bg-bg-white px-6 py-3 text-[15px] font-medium text-text-primary"
-            >
+            <button type="button" onClick={onClose} className="flex-1 ios-btn-secondary">
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || contactsLoading}
-              className="btn-primary flex-1 rounded-lg px-6 py-3 text-[15px] font-medium text-white disabled:opacity-60"
+              className="flex-1 ios-btn-primary"
             >
               {submitting ? 'Saving…' : 'Save changes'}
             </button>

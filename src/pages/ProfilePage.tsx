@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AddMailboxDialog } from '../components/AddMailboxDialog'
 import { Footer } from '../components/Footer'
-import { Header } from '../components/Header'
 import { MailboxChooserDialog } from '../components/MailboxChooserDialog'
 import { RowMenu } from '../components/RowMenu'
 import { TopSubPage } from '../components/TopSubPage'
@@ -28,9 +27,10 @@ export function ProfilePage() {
   >(null)
   const [chooserOpen, setChooserOpen] = useState(false)
   const [connectingProvider, setConnectingProvider] = useState<'google' | 'microsoft' | null>(null)
-  const [mailboxMessage, setMailboxMessage] = useState<
-    { type: 'success' | 'error'; text: string } | null
-  >(null)
+  const [mailboxMessage, setMailboxMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -73,12 +73,15 @@ export function ProfilePage() {
     } else if (oauthError) {
       setMailboxMessage({ type: 'error', text: oauthError })
     }
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      next.delete('connected')
-      next.delete('oauth_error')
-      return next
-    }, { replace: true })
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('connected')
+        next.delete('oauth_error')
+        return next
+      },
+      { replace: true },
+    )
     // Deliberately run once on mount only — this consumes the OAuth
     // redirect's query params, not something to re-run on every render.
   }, [])
@@ -124,7 +127,10 @@ export function ProfilePage() {
     setSaved(false)
     const { error } = await supabase
       .from('profiles')
-      .update({ first_name: firstName.trim() || null, last_name: lastName.trim() || null })
+      .update({
+        first_name: firstName.trim() || null,
+        last_name: lastName.trim() || null,
+      })
       .eq('id', user.id)
     setSubmitting(false)
     if (error) {
@@ -163,19 +169,18 @@ export function ProfilePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-app">
-      <Header />
       <TopSubPage backTo="/" title="Profile" />
 
-      <div className="mx-auto w-full max-w-[420px] flex-1 px-6 py-4">
+      <div className="mx-auto w-full max-w-[420px] flex-1 px-4 py-4">
         <div className="flex flex-col items-center gap-3 pb-6">
           {avatarUrl ? (
             <img src={avatarUrl} alt="" className="size-20 rounded-full object-cover" />
           ) : (
-            <span className="flex size-20 items-center justify-center rounded-full bg-accent-from text-[28px] font-medium text-white">
+            <span className="flex size-20 items-center justify-center rounded-full bg-accent-from text-[32px] font-medium text-white">
               {initial}
             </span>
           )}
-          <label className="cursor-pointer text-[14px] font-medium text-[#0060e3]">
+          <label className="cursor-pointer text-[17px] text-accent active:opacity-60">
             {uploading ? 'Uploading…' : 'Change picture'}
             <input
               type="file"
@@ -188,118 +193,105 @@ export function ProfilePage() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Email
+          <div className="ios-group !mx-0">
+            <div className="ios-row-field">
+              <span>Email</span>
+              <p className="min-w-0 flex-1 truncate py-3 text-text-secondary">{user.email}</p>
+            </div>
+            <label className="ios-row-field">
+              <span>First name</span>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Optional"
+              />
             </label>
-            <p className="rounded-lg border border-border-subtle bg-bg-row px-4 py-3 text-[15px] text-text-secondary">
-              {user.email}
-            </p>
+            <label className="ios-row-field">
+              <span>Last name</span>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Optional"
+              />
+            </label>
           </div>
 
-          <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              First name
-            </label>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Optional"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
-            />
-          </div>
+          {error && <p className="px-1 text-[15px] text-danger-text">{error}</p>}
+          {saved && <p className="px-1 text-[15px] text-success-text">Saved.</p>}
 
-          <div>
-            <label className="mb-1 block text-[14px] font-medium text-text-secondary">
-              Last name
-            </label>
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="Optional"
-              className="w-full rounded-lg border border-border-subtle bg-bg-white px-4 py-3 text-[15px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-to"
-            />
-          </div>
-
-          {error && <p className="text-[14px] text-danger-text">{error}</p>}
-          {saved && <p className="text-[14px] text-success-text">Saved.</p>}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="btn-primary w-full rounded-lg px-6 py-3 text-[15px] font-medium text-white disabled:opacity-60"
-          >
+          <button type="submit" disabled={submitting} className="ios-btn-primary w-full">
             {submitting ? 'Saving…' : 'Save changes'}
           </button>
         </form>
 
         <div className="mt-8">
-          <div className="mb-1 flex items-center justify-between">
-            <h2 className="text-[16px] font-semibold text-text-primary">Connected mailboxes</h2>
+          <div className="mb-1 flex items-center justify-between px-1">
+            <h2 className="text-[22px] font-bold tracking-[-0.022em] text-text-primary">
+              Mailboxes
+            </h2>
             <button
               type="button"
               onClick={() => setChooserOpen(true)}
-              className="text-[14px] font-medium text-[#0060e3]"
+              className="text-[17px] text-accent active:opacity-60"
             >
-              + Add mailbox
+              Add
             </button>
           </div>
-          <p className="mb-3 text-[13px] text-text-secondary">
+          <p className="mb-3 px-1 text-[13px] text-text-secondary">
             Chase emails are sent literally from one of these addresses — no shared sender, no
             Reply-To trick.
           </p>
 
           {mailboxMessage && (
             <p
-              className={`mb-3 text-[14px] ${mailboxMessage.type === 'error' ? 'text-danger-text' : 'text-success-text'}`}
+              className={`mb-3 px-1 text-[15px] ${mailboxMessage.type === 'error' ? 'text-danger-text' : 'text-success-text'}`}
             >
               {mailboxMessage.text}
             </p>
           )}
 
           {mailboxes.length === 0 ? (
-            <p className="rounded-lg border border-border-subtle bg-bg-row px-4 py-3 text-[14px] text-text-secondary">
+            <p className="ios-empty !mx-0">
               No mailbox connected yet. You won't be able to send chase emails until you add one.
             </p>
           ) : (
-            <ul className="flex flex-col gap-2">
+            <ul className="ios-group !mx-0">
               {mailboxes.map((mailbox) => (
-                <li
-                  key={mailbox.id}
-                  className="flex items-center gap-3 rounded-lg border border-border-subtle bg-bg-white px-4 py-3"
-                >
-                  <div className="flex flex-1 flex-col gap-1">
+                <li key={mailbox.id} className="flex items-center gap-1 py-2.5 pl-4 pr-1">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[14px] font-semibold text-text-primary">
+                      <span className="text-[17px] font-medium text-text-primary">
                         {mailbox.label || mailbox.email}
                       </span>
                       {mailbox.is_default && (
-                        <span className="rounded border border-transparent bg-success-bg px-1 py-0.5 text-[11px] font-medium text-success-text">
+                        <span className="rounded-full bg-success-bg px-2 py-[2px] text-[11px] font-semibold text-success-text">
                           Default
                         </span>
                       )}
                       {mailbox.provider !== 'smtp' && (
-                        <span className="rounded border border-border-subtle bg-bg-row px-1 py-0.5 text-[11px] font-medium text-text-secondary">
+                        <span className="rounded-full bg-fill px-2 py-[2px] text-[11px] font-semibold text-text-secondary">
                           {PROVIDER_LABEL[mailbox.provider]}
                         </span>
                       )}
                       {mailbox.needs_reauth && (
-                        <span className="rounded border border-transparent bg-danger-bg px-1 py-0.5 text-[11px] font-medium text-danger-text">
+                        <span className="rounded-full bg-danger-bg px-2 py-[2px] text-[11px] font-semibold text-danger-text">
                           Needs reconnect
                         </span>
                       )}
                     </div>
                     {mailbox.label && (
-                      <span className="text-[13px] text-text-secondary">{mailbox.email}</span>
+                      <span className="truncate text-[15px] text-text-secondary">
+                        {mailbox.email}
+                      </span>
                     )}
                     <div className="flex items-center gap-3">
                       {!mailbox.is_default && (
                         <button
                           type="button"
                           onClick={() => handleSetDefault(mailbox.id)}
-                          className="w-fit text-[12px] font-medium text-[#0060e3]"
+                          className="w-fit text-[15px] text-accent"
                         >
                           Set as default
                         </button>
@@ -308,10 +300,13 @@ export function ProfilePage() {
                         <button
                           type="button"
                           onClick={() =>
-                            handleChooseOAuth(mailbox.provider as 'google' | 'microsoft', mailbox.id)
+                            handleChooseOAuth(
+                              mailbox.provider as 'google' | 'microsoft',
+                              mailbox.id,
+                            )
                           }
                           disabled={!!connectingProvider}
-                          className="w-fit text-[12px] font-medium text-danger-text disabled:opacity-60"
+                          className="w-fit text-[15px] text-danger-text disabled:opacity-60"
                         >
                           {connectingProvider === mailbox.provider ? 'Connecting…' : 'Reconnect'}
                         </button>
@@ -336,7 +331,7 @@ export function ProfilePage() {
         <button
           type="button"
           onClick={handleSignOut}
-          className="mt-6 w-full rounded-lg border border-border-button bg-bg-white px-6 py-3 text-[15px] font-medium text-danger-text"
+          className="mt-8 w-full rounded-[12px] bg-bg-row px-6 py-3 text-[17px] text-danger-text active:opacity-60"
         >
           Sign out
         </button>
