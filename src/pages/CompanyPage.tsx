@@ -267,14 +267,6 @@ export function CompanyPage() {
         onEdit={() => setDialog({ type: 'client-edit' })}
         onArchive={handleArchiveClient}
         archiveLabel="Archive client"
-        extraAction={
-          documentTodos.length > 0
-            ? {
-                label: 'Chase all outstanding',
-                onClick: () => setDialog({ type: 'chase-all' }),
-              }
-            : undefined
-        }
       />
 
       <div className="mx-auto w-full max-w-[600px] flex-1">
@@ -304,7 +296,20 @@ export function CompanyPage() {
         </div>
 
         {/* Todo */}
-        <SectionTitle title={`Todo (${todos.length})`} />
+        <SectionTitle
+          title={`Todo (${todos.length})`}
+          trailing={
+            documentTodos.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setDialog({ type: 'chase-all' })}
+                className="pr-3 text-[17px] text-accent active:opacity-60"
+              >
+                Chase all outstanding
+              </button>
+            ) : undefined
+          }
+        />
         {todoWarning && <p className="px-5 pb-2 text-[15px] text-danger-text">{todoWarning}</p>}
         {todos.length === 0 ? (
           <p className="ios-empty">No open items.</p>
