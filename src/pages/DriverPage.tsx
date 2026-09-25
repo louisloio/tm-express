@@ -68,7 +68,7 @@ export function DriverPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app">
         <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -76,7 +76,7 @@ export function DriverPage() {
 
   if (error || !driver) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app">
         <TopSubPage backTo={backTo} title="Driver" />
         <p className="px-5 py-8 text-[15px] text-danger-text">{error ?? 'Driver not found.'}</p>
       </div>
@@ -91,7 +91,7 @@ export function DriverPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app">
       <TopSubPage
         backTo={backTo}
         title={driver.name}

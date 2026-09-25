@@ -25,7 +25,7 @@ export function SignIn() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-bg-app pt-[calc(env(safe-area-inset-top)+64px)]">
+    <div className="flex min-h-dvh flex-col items-center bg-bg-app pt-[calc(env(safe-area-inset-top)+64px)]">
       <img src={logo} alt="TM Express" className="h-[26px] w-auto" />
       <form onSubmit={handleSubmit} className="flex w-full max-w-[420px] flex-col px-4 py-8">
         <div className="ios-group !mx-0">

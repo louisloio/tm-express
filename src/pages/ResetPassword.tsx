@@ -24,7 +24,7 @@ export function ResetPassword() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-bg-app pt-[calc(env(safe-area-inset-top)+64px)]">
+    <div className="flex min-h-dvh flex-col items-center bg-bg-app pt-[calc(env(safe-area-inset-top)+64px)]">
       <img src={logo} alt="TM Express" className="h-[26px] w-auto" />
       <form onSubmit={handleSubmit} className="flex w-full max-w-[420px] flex-col px-4 py-8">
         <p className="pb-6 text-[15px] text-text-secondary">Choose a new password.</p>

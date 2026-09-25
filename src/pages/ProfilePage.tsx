@@ -168,7 +168,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app">
       <TopSubPage backTo="/" title="Profile" />
 
       <div className="mx-auto w-full max-w-[420px] flex-1 px-4 py-4">

@@ -195,7 +195,7 @@ export function CompanyPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app">
         <p className="px-6 py-8 text-[14px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -203,7 +203,7 @@ export function CompanyPage() {
 
   if (error || !data) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app">
         <div className="px-6 py-8">
           <p className="text-[14px] text-danger-text">{error ?? 'Client not found.'}</p>
           <Link to="/" className="mt-2 inline-block text-[14px] font-medium text-accent">
@@ -259,7 +259,7 @@ export function CompanyPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app">
       <TopSubPage
         backTo="/"
         title={client.company_name}

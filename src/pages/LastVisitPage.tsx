@@ -51,7 +51,7 @@ export function LastVisitPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app">
         <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -59,7 +59,7 @@ export function LastVisitPage() {
 
   if (error || !visit) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app">
         <TopSubPage backTo={backTo} title="Visit" />
         <p className="px-5 py-8 text-[15px] text-danger-text">{error ?? 'Visit not found.'}</p>
       </div>
@@ -67,7 +67,7 @@ export function LastVisitPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app">
       <TopSubPage
         backTo={backTo}
         title={`Visit — ${formatDate(visit.date)}`}

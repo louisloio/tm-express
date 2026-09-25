@@ -72,7 +72,7 @@ export function InfringementPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app">
         <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -80,7 +80,7 @@ export function InfringementPage() {
 
   if (error || !infringement) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app">
         <TopSubPage backTo={backTo} title="Infringement" />
         <p className="px-5 py-8 text-[15px] text-danger-text">
           {error ?? 'Infringement not found.'}
@@ -90,7 +90,7 @@ export function InfringementPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app">
       <TopSubPage
         backTo={backTo}
         title={infringement.type}

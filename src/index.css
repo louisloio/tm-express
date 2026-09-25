@@ -103,8 +103,9 @@ body {
   /* iOS standalone mode (apple-mobile-web-app-status-bar-style:
      black-translucent, see index.html) draws content full-screen under the
      status bar/notch. The top inset is applied by the translucent bars
-     themselves (Header, auth pages) so the material extends under it. */
-  padding-bottom: env(safe-area-inset-bottom);
+     themselves (Header, auth pages) so the material extends under it. The
+     bottom inset is applied inside Footer — padding on body would add to a
+     full-height page and make it scroll for no reason. */
 }
 
 button {

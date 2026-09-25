@@ -72,7 +72,7 @@ export function OAuthCallbackPage() {
   }, [navigate, provider, searchParams])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-app">
+    <div className="flex min-h-dvh items-center justify-center bg-bg-app">
       <p className="text-[15px] text-text-secondary">Connecting…</p>
     </div>
   )

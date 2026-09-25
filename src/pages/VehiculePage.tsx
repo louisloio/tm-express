@@ -73,7 +73,7 @@ export function VehiculePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app">
         <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -81,7 +81,7 @@ export function VehiculePage() {
 
   if (error || !vehicle) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app">
         <TopSubPage backTo={backTo} title="Vehicle" />
         <p className="px-5 py-8 text-[15px] text-danger-text">{error ?? 'Vehicle not found.'}</p>
       </div>
@@ -96,7 +96,7 @@ export function VehiculePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app">
       <TopSubPage
         backTo={backTo}
         title={vehicle.registration}
