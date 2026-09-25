@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import logo from '../assets/logo.svg'
+import { Logo } from '../components/Logo'
 import { useAuth } from '../context/AuthContext'
 
 export function SignIn() {
@@ -26,7 +26,7 @@ export function SignIn() {
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-bg-app pt-[calc(env(safe-area-inset-top)+64px)]">
-      <img src={logo} alt="TM Express" className="h-[22px] w-auto" />
+      <Logo className="h-[26px] w-auto text-text-primary" />
       <form onSubmit={handleSubmit} className="flex w-full max-w-[420px] flex-col px-4 py-8">
         <div className="ios-group !mx-0">
           <label className="ios-row-field">

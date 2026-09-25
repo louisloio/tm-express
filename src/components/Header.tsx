@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import logo from '../assets/logo.svg'
+import { Logo } from './Logo'
 import { useAuth } from '../context/AuthContext'
 
 interface HeaderProps {
@@ -22,7 +22,7 @@ export function Header({ bare = false }: HeaderProps) {
         aria-label="TM Express home"
         className="flex h-11 items-center active:opacity-60"
       >
-        <img src={logo} alt="TM Express" className="h-[17px] w-auto" />
+        <Logo className="h-[24px] w-auto text-text-primary" />
       </Link>
       <Link
         to="/profile"
