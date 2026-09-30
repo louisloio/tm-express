@@ -4,17 +4,62 @@ import { AddDocumentDialog } from '../components/AddDocumentDialog'
 import { AddDriverDialog } from '../components/AddDriverDialog'
 import { DocumentRow } from '../components/company/DocumentRow'
 import { DocSlotRow } from '../components/DocSlotRow'
-import { Footer } from '../components/Footer'
 import { InlineLabel } from '../components/InlineLabel'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
 import { archiveRow } from '../lib/archive'
+import { fetchDriverNi } from '../lib/driverSecrets'
 import { formatDate, getDocSlotStatus } from '../lib/format'
 import { notifyDataChanged } from '../lib/dataEvents'
+import { fetchDocumentTodosForParent } from '../lib/todos'
 import { supabase } from '../lib/supabase'
-import type { DocType, Document, Driver } from '../types/database'
+import type { DocType, Document, Driver, Todo } from '../types/database'
 
 const DOC_TYPES = ['Licence check', 'CPC'] as const
+
+/**
+ * "National Insurance no." row: masked by default, decrypted on demand —
+ * the NI number is never fetched (let alone shown) until the owning user
+ * taps to reveal it, and only from this detail page. See
+ * src/lib/driverSecrets.ts.
+ */
+function NiNumberRow({ driverId }: { driverId: string }) {
+  const [state, setState] = useState<'hidden' | 'loading' | 'error' | 'revealed'>('hidden')
+  const [value, setValue] = useState<string | null>(null)
+
+  async function reveal() {
+    setState('loading')
+    const { niNumber, error } = await fetchDriverNi(driverId)
+    if (error) {
+      setState('error')
+      return
+    }
+    setValue(niNumber)
+    setState('revealed')
+  }
+
+  if (state === 'revealed') {
+    return <InlineLabel label="National Insurance no." value={value ?? '—'} />
+  }
+
+  return (
+    <div className="flex w-full items-baseline justify-between gap-4 text-[15px]">
+      <span className="shrink-0 text-text-secondary">National Insurance no.</span>
+      {state === 'error' ? (
+        <span className="text-danger-text">Couldn't load</span>
+      ) : (
+        <button
+          type="button"
+          onClick={reveal}
+          disabled={state === 'loading'}
+          className="text-accent active:opacity-60 disabled:opacity-60"
+        >
+          {state === 'loading' ? 'Loading…' : 'Show'}
+        </button>
+      )}
+    </div>
+  )
+}
 
 export function DriverPage() {
   const { clientId, driverId } = useParams<{
@@ -24,14 +69,19 @@ export function DriverPage() {
   const navigate = useNavigate()
   const [driver, setDriver] = useState<Driver | null>(null)
   const [documents, setDocuments] = useState<Document[]>([])
+  const [docTodos, setDocTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [upload, setUpload] = useState<{ docType?: DocType; file?: File } | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  // Bumped on every save so NiNumberRow remounts and forgets whatever it
+  // had revealed/fetched before — otherwise a saved NI number wouldn't
+  // show up without a manual page reload.
+  const [niRefreshKey, setNiRefreshKey] = useState(0)
 
   const load = useCallback(async () => {
     if (!driverId) return
-    const [driverRes, documentsRes] = await Promise.all([
+    const [driverRes, documentsRes, docTodosRes] = await Promise.all([
       supabase.from('drivers').select('*').eq('id', driverId).is('archived_at', null).maybeSingle(),
       supabase
         .from('documents')
@@ -40,12 +90,14 @@ export function DriverPage() {
         .eq('parent_id', driverId)
         .is('archived_at', null)
         .order('uploaded_at', { ascending: false }),
+      fetchDocumentTodosForParent('driver', driverId),
     ])
     if (driverRes.error || !driverRes.data) {
       setError(driverRes.error?.message ?? 'Driver not found.')
     } else {
       setDriver(driverRes.data)
       setDocuments(documentsRes.data ?? [])
+      setDocTodos(docTodosRes)
       setError(null)
     }
     setLoading(false)
@@ -71,7 +123,7 @@ export function DriverPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-dvh flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -79,7 +131,7 @@ export function DriverPage() {
 
   if (error || !driver) {
     return (
-      <div className="flex min-h-dvh flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <TopSubPage backTo={backTo} title="Driver" />
         <p className="px-5 py-8 text-[15px] text-danger-text">{error ?? 'Driver not found.'}</p>
       </div>
@@ -93,13 +145,26 @@ export function DriverPage() {
     if (!latestByType.has(d.doc_type)) latestByType.set(d.doc_type, d)
   }
 
+  const chasedUntilByType = new Map<DocType, string>()
+  for (const t of docTodos) {
+    if (t.doc_type && t.snoozed_until && new Date(t.snoozed_until).getTime() > Date.now()) {
+      chasedUntilByType.set(t.doc_type, t.snoozed_until)
+    }
+  }
+
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
       <TopSubPage backTo={backTo} title={driver.name} onEdit={() => setEditOpen(true)} />
 
       <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
         <div className="ios-group mt-3 [&>*]:px-4 [&>*]:py-[11px]">
           <InlineLabel label="Name" value={driver.name} />
+          <InlineLabel label="Licence number" value={driver.licence_number ?? '—'} />
+          <InlineLabel
+            label="Date of birth"
+            value={driver.date_of_birth ? formatDate(driver.date_of_birth) : '—'}
+          />
+          <NiNumberRow key={niRefreshKey} driverId={driver.id} />
         </div>
 
         <SectionTitle title="Documents" addLabel="Upload document" onAdd={() => setUpload({})} />
@@ -113,6 +178,9 @@ export function DriverPage() {
                 label={type}
                 value={doc?.expiry_date ? `Expires ${formatDate(doc.expiry_date)}` : 'Not on file'}
                 tone={status === 'ok' ? undefined : status}
+                chasedUntil={chasedUntilByType.get(type)}
+                onCooldownEnd={load}
+                onOpen={() => setUpload({ docType: type })}
                 onFile={(file) => setUpload({ docType: type, file })}
               />
             )
@@ -135,8 +203,6 @@ export function DriverPage() {
           </>
         )}
       </div>
-
-      <Footer />
 
       {upload && clientId && driverId && (
         <AddDocumentDialog
@@ -161,6 +227,7 @@ export function DriverPage() {
           onClose={() => setEditOpen(false)}
           onCreated={() => {
             setEditOpen(false)
+            setNiRefreshKey((k) => k + 1)
             void load()
           }}
         />

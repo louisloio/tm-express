@@ -24,6 +24,10 @@ function suggestExpiry(docType: DocType): string {
   return date.toISOString().slice(0, 10)
 }
 
+function today(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
 interface AddDocumentDialogProps {
   clientId: string
   parentType: DocParentType
@@ -50,13 +54,19 @@ export function AddDocumentDialog({
   const [docType, setDocType] = useState<DocType>(initialDocType ?? docTypes[0])
   const [expiryDate, setExpiryDate] = useState(suggestExpiry(initialDocType ?? docTypes[0]))
   const [reminderDays, setReminderDays] = useState(14)
+  // Only meaningful for 'Licence check' — the date the check was actually
+  // carried out (see supabase/011_driver_fields.sql). Defaults to today,
+  // since a check is normally logged the day it's done.
+  const [checkedDate, setCheckedDate] = useState(initialDocType === 'Licence check' ? today() : '')
   const [file, setFile] = useState<File | null>(initialFile ?? null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isLicenceCheck = docType === 'Licence check'
 
   function handleDocTypeChange(next: DocType) {
     setDocType(next)
     setExpiryDate(suggestExpiry(next))
+    setCheckedDate(next === 'Licence check' ? today() : '')
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -86,6 +96,7 @@ export function AddDocumentDialog({
       file_path: path,
       expiry_date: expiryDate || null,
       reminder_days_before: reminderDays,
+      checked_date: isLicenceCheck ? checkedDate || null : null,
     })
     setSubmitting(false)
 
@@ -108,6 +119,23 @@ export function AddDocumentDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 pb-5 pt-3">
           <div>
+            <label className="ios-label">File</label>
+            <FileDropzone file={file} onChange={setFile} />
+          </div>
+
+          {isLicenceCheck && (
+            <div>
+              <label className="ios-label">Date checked</label>
+              <input
+                type="date"
+                value={checkedDate}
+                onChange={(e) => setCheckedDate(e.target.value)}
+                className="ios-field"
+              />
+            </div>
+          )}
+
+          <div>
             <label className="ios-label">Document type</label>
             <select
               value={docType}
@@ -120,11 +148,6 @@ export function AddDocumentDialog({
                 </option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label className="ios-label">File</label>
-            <FileDropzone file={file} onChange={setFile} />
           </div>
 
           <div>

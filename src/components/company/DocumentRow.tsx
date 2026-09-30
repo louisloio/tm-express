@@ -70,6 +70,11 @@ export function DocumentRow({ doc, parentLabel, onArchive }: DocumentRowProps) {
           <span className="text-[17px] text-text-tertiary">No file uploaded</span>
         )}
         <span className="text-[15px] text-text-tertiary">{formatDateTime(doc.uploaded_at)}</span>
+        {doc.checked_date && (
+          <span className="text-[15px] text-text-tertiary">
+            Checked {formatDate(doc.checked_date)}
+          </span>
+        )}
         <span className={`text-[15px] ${STATUS_CLASS[status]}`}>
           {doc.expiry_date ? `Expires ${formatDate(doc.expiry_date)}` : 'No expiry set'}
         </span>

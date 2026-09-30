@@ -61,6 +61,8 @@ export type Driver = {
   id: string
   client_id: string
   name: string
+  licence_number: string | null
+  date_of_birth: string | null
   created_at: string
   archived_at: string | null
 }
@@ -116,6 +118,8 @@ export type Document = {
   file_path: string | null
   expiry_date: string | null
   reminder_days_before: number | null
+  /** Only meaningful for a 'Licence check' — the date the check was carried out (drives the next-check reminder alongside expiry_date). */
+  checked_date: string | null
   uploaded_at: string
   archived_at: string | null
 }
@@ -182,8 +186,7 @@ export interface Database {
     Tables: {
       clients: {
         Row: Client
-        Insert: Partial<Client> &
-          Pick<Client, 'company_name'> & { user_id?: string }
+        Insert: Partial<Client> & Pick<Client, 'company_name'> & { user_id?: string }
         Update: Partial<Client>
         Relationships: []
       }

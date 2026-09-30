@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AddVisitDialog } from '../components/AddVisitDialog'
-import { Footer } from '../components/Footer'
 import { InlineLabel } from '../components/InlineLabel'
 import { TopSubPage } from '../components/TopSubPage'
 import { archiveRow } from '../lib/archive'
@@ -53,7 +52,7 @@ export function LastVisitPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-dvh flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -61,7 +60,7 @@ export function LastVisitPage() {
 
   if (error || !visit) {
     return (
-      <div className="flex min-h-dvh flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <TopSubPage backTo={backTo} title="Visit" />
         <p className="px-5 py-8 text-[15px] text-danger-text">{error ?? 'Visit not found.'}</p>
       </div>
@@ -69,7 +68,7 @@ export function LastVisitPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
       <TopSubPage
         backTo={backTo}
         title={`Visit — ${formatDate(visit.date)}`}
@@ -85,8 +84,6 @@ export function LastVisitPage() {
           </div>
         </div>
       </div>
-
-      <Footer />
 
       {editOpen && clientId && (
         <AddVisitDialog

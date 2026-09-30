@@ -4,15 +4,15 @@ import { AddDocumentDialog } from '../components/AddDocumentDialog'
 import { AddVehicleDialog } from '../components/AddVehicleDialog'
 import { DocumentRow } from '../components/company/DocumentRow'
 import { DocSlotRow } from '../components/DocSlotRow'
-import { Footer } from '../components/Footer'
 import { InlineLabel } from '../components/InlineLabel'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
 import { archiveRow } from '../lib/archive'
 import { formatDate, getDocSlotStatus } from '../lib/format'
 import { notifyDataChanged } from '../lib/dataEvents'
+import { fetchDocumentTodosForParent } from '../lib/todos'
 import { supabase } from '../lib/supabase'
-import type { DocType, Document, Vehicle } from '../types/database'
+import type { DocType, Document, Todo, Vehicle } from '../types/database'
 
 const DOC_TYPES = ['PMI', 'Brake test', 'MOT', 'VED', 'Insurance'] as const
 
@@ -24,6 +24,7 @@ export function VehiculePage() {
   const navigate = useNavigate()
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
   const [documents, setDocuments] = useState<Document[]>([])
+  const [docTodos, setDocTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [upload, setUpload] = useState<{ docType?: DocType; file?: File } | null>(null)
@@ -31,7 +32,7 @@ export function VehiculePage() {
 
   const load = useCallback(async () => {
     if (!vehicleId) return
-    const [vehicleRes, documentsRes] = await Promise.all([
+    const [vehicleRes, documentsRes, docTodosRes] = await Promise.all([
       supabase
         .from('vehicles')
         .select('*')
@@ -45,12 +46,14 @@ export function VehiculePage() {
         .eq('parent_id', vehicleId)
         .is('archived_at', null)
         .order('uploaded_at', { ascending: false }),
+      fetchDocumentTodosForParent('vehicle', vehicleId),
     ])
     if (vehicleRes.error || !vehicleRes.data) {
       setError(vehicleRes.error?.message ?? 'Vehicle not found.')
     } else {
       setVehicle(vehicleRes.data)
       setDocuments(documentsRes.data ?? [])
+      setDocTodos(docTodosRes)
       setError(null)
     }
     setLoading(false)
@@ -76,7 +79,7 @@ export function VehiculePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-dvh flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -84,7 +87,7 @@ export function VehiculePage() {
 
   if (error || !vehicle) {
     return (
-      <div className="flex min-h-dvh flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <TopSubPage backTo={backTo} title="Vehicle" />
         <p className="px-5 py-8 text-[15px] text-danger-text">{error ?? 'Vehicle not found.'}</p>
       </div>
@@ -98,8 +101,15 @@ export function VehiculePage() {
     if (!latestByType.has(d.doc_type)) latestByType.set(d.doc_type, d)
   }
 
+  const chasedUntilByType = new Map<DocType, string>()
+  for (const t of docTodos) {
+    if (t.doc_type && t.snoozed_until && new Date(t.snoozed_until).getTime() > Date.now()) {
+      chasedUntilByType.set(t.doc_type, t.snoozed_until)
+    }
+  }
+
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
       <TopSubPage backTo={backTo} title={vehicle.registration} onEdit={() => setEditOpen(true)} />
 
       <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
@@ -119,6 +129,9 @@ export function VehiculePage() {
                 label={type}
                 value={doc?.expiry_date ? `Expires ${formatDate(doc.expiry_date)}` : 'Not on file'}
                 tone={status === 'ok' ? undefined : status}
+                chasedUntil={chasedUntilByType.get(type)}
+                onCooldownEnd={load}
+                onOpen={() => setUpload({ docType: type })}
                 onFile={(file) => setUpload({ docType: type, file })}
               />
             )
@@ -141,8 +154,6 @@ export function VehiculePage() {
           </>
         )}
       </div>
-
-      <Footer />
 
       {upload && clientId && vehicleId && (
         <AddDocumentDialog

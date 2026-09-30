@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AddMailboxDialog } from '../components/AddMailboxDialog'
-import { Footer } from '../components/Footer'
 import { MailboxChooserDialog } from '../components/MailboxChooserDialog'
 import { EditButton } from '../components/EditButton'
 import { TopSubPage } from '../components/TopSubPage'
@@ -209,7 +208,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
       <TopSubPage backTo="/" title="Profile" />
 
       <div className="mx-auto w-full max-w-[420px] flex-1 px-4 py-4">
@@ -407,8 +406,6 @@ export function ProfilePage() {
           }}
         />
       )}
-
-      <Footer />
     </div>
   )
 }

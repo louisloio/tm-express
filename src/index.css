@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /*
  * Apple Human Interface Guidelines foundation.
@@ -8,8 +8,8 @@
  */
 @theme {
   --font-sans:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-    system-ui, "Helvetica Neue", Arial, sans-serif;
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', system-ui, 'Helvetica Neue',
+    Arial, sans-serif;
 
   --radius-lg: 0.75rem;
   --radius-xl: 0.875rem;
@@ -104,8 +104,10 @@ body {
      black-translucent, see index.html) draws content full-screen under the
      status bar/notch. The top inset is applied by the translucent bars
      themselves (Header, auth pages) so the material extends under it. The
-     bottom inset is applied inside Footer — padding on body would add to a
-     full-height page and make it scroll for no reason. */
+     bottom inset is applied per-page (pb-[env(safe-area-inset-bottom)] on
+     each page's own min-h-dvh wrapper) rather than here on body — padding
+     here would add on top of an already-full-height page and make it
+     scroll for no reason. */
 }
 
 button {
@@ -196,8 +198,7 @@ button {
     color: var(--color-text-muted);
   }
   .ios-field:focus {
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--color-accent) 35%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 35%, transparent);
   }
 
   /* ---- sheets (modal dialogs) ----------------------------------------- */
@@ -237,7 +238,7 @@ button {
     }
   }
   .ios-sheet::before {
-    content: "";
+    content: '';
     display: block;
     flex-shrink: 0;
     width: 36px;
@@ -300,7 +301,7 @@ button {
       background-color 0.2s ease,
       box-shadow 0.2s ease;
   }
-  .ios-segment[aria-selected="true"] {
+  .ios-segment[aria-selected='true'] {
     background: var(--color-segment);
     font-weight: 600;
     box-shadow:
@@ -362,7 +363,7 @@ button {
     position: relative;
   }
   .ios-group > * + *::before {
-    content: "";
+    content: '';
     position: absolute;
     top: 0;
     left: 16px;
@@ -435,11 +436,26 @@ button {
     opacity: 0;
   }
 }
+@keyframes ios-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+.animate-ios-blink {
+  animation: ios-blink 0.7s ease-in-out infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .ios-backdrop,
   .ios-sheet,
   .ios-menu {
+    animation: none;
+  }
+  .animate-ios-blink {
     animation: none;
   }
 }

@@ -4,7 +4,6 @@ import { AddClientDialog } from '../components/AddClientDialog'
 import { TodoRow } from '../components/company/TodoRow'
 import { EditClientDialog } from '../components/EditClientDialog'
 import { EmailChaseModal } from '../components/EmailChaseModal'
-import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { PlusIcon } from '../components/icons'
 import { OnboardingBadge } from '../components/OnboardingBadge'
@@ -104,7 +103,7 @@ export function Home() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
       <div className="ios-bar sticky top-0 z-30 border-b-[0.5px] border-border-divider pt-[env(safe-area-inset-top)]">
         <Header bare />
         <div className="mx-auto w-full max-w-[600px] px-4 pb-2.5">
@@ -206,8 +205,6 @@ export function Home() {
           </>
         )}
       </div>
-
-      <Footer />
 
       {dialogOpen && (
         <AddClientDialog

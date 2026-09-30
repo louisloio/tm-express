@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AddInfringementDialog } from '../components/AddInfringementDialog'
 import { EmailChaseModal } from '../components/EmailChaseModal'
-import { Footer } from '../components/Footer'
 import { InlineLabel } from '../components/InlineLabel'
 import { TopSubPage } from '../components/TopSubPage'
 import { archiveRow } from '../lib/archive'
@@ -124,7 +123,7 @@ export function InfringementPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-dvh flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <p className="px-5 py-8 text-[15px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -132,7 +131,7 @@ export function InfringementPage() {
 
   if (error || !infringement) {
     return (
-      <div className="flex min-h-dvh flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <TopSubPage backTo={backTo} title="Infringement" />
         <p className="px-5 py-8 text-[15px] text-danger-text">
           {error ?? 'Infringement not found.'}
@@ -142,7 +141,7 @@ export function InfringementPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
       <TopSubPage backTo={backTo} title={infringement.type} onEdit={() => setEditOpen(true)} />
 
       <div className="mx-auto w-full max-w-[600px] flex-1 lg:max-w-[720px]">
@@ -196,8 +195,6 @@ export function InfringementPage() {
           )}
         </div>
       </div>
-
-      <Footer />
 
       {chase && clientId && (
         <EmailChaseModal

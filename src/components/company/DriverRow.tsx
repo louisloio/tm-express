@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { DueLabel } from '../DueLabel'
 import { InlineLabel } from '../InlineLabel'
 import { EditButton } from '../EditButton'
 import { formatDate, getDocSlotStatus } from '../../lib/format'
@@ -8,6 +9,8 @@ interface DriverRowProps {
   clientId: string
   driver: Driver
   docsByType: Map<DocType, Document>
+  chasedUntilByType?: Map<DocType, string>
+  onCooldownEnd?: () => void
   infringementCount: number
   onEdit: () => void
 }
@@ -16,6 +19,8 @@ export function DriverRow({
   clientId,
   driver,
   docsByType,
+  chasedUntilByType,
+  onCooldownEnd,
   infringementCount,
   onEdit,
 }: DriverRowProps) {
@@ -35,15 +40,19 @@ export function DriverRow({
           <span className="text-[17px] font-semibold text-text-primary">{driver.name}</span>
         </div>
         <div className="flex flex-col gap-1">
-          <InlineLabel
+          <DueLabel
             label="Licence check due"
             value={licence?.expiry_date ? formatDate(licence.expiry_date) : 'Not on file'}
             tone={licenceStatus === 'ok' ? undefined : licenceStatus}
+            chasedUntil={chasedUntilByType?.get('Licence check')}
+            onCooldownEnd={onCooldownEnd}
           />
-          <InlineLabel
+          <DueLabel
             label="CPC due"
             value={cpc?.expiry_date ? formatDate(cpc.expiry_date) : 'Not on file'}
             tone={cpcStatus === 'ok' ? undefined : cpcStatus}
+            chasedUntil={chasedUntilByType?.get('CPC')}
+            onCooldownEnd={onCooldownEnd}
           />
           <InlineLabel label="Infringements" value={String(infringementCount)} />
         </div>

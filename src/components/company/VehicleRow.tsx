@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { InlineLabel } from '../InlineLabel'
+import { DueLabel } from '../DueLabel'
 import { EditButton } from '../EditButton'
 import { formatDate, getDocSlotStatus } from '../../lib/format'
 import type { DocType, Document, Vehicle } from '../../types/database'
@@ -16,10 +16,19 @@ interface VehicleRowProps {
   clientId: string
   vehicle: Vehicle
   docsByType: Map<DocType, Document>
+  chasedUntilByType?: Map<DocType, string>
+  onCooldownEnd?: () => void
   onEdit: () => void
 }
 
-export function VehicleRow({ clientId, vehicle, docsByType, onEdit }: VehicleRowProps) {
+export function VehicleRow({
+  clientId,
+  vehicle,
+  docsByType,
+  chasedUntilByType,
+  onCooldownEnd,
+  onEdit,
+}: VehicleRowProps) {
   return (
     <div className="flex items-start gap-1 py-3 pl-4 pr-1">
       <Link
@@ -37,11 +46,13 @@ export function VehicleRow({ clientId, vehicle, docsByType, onEdit }: VehicleRow
             const doc = docsByType.get(type)
             const status = getDocSlotStatus(doc)
             return (
-              <InlineLabel
+              <DueLabel
                 key={type}
                 label={label}
                 value={doc?.expiry_date ? formatDate(doc.expiry_date) : 'Not on file'}
                 tone={status === 'ok' ? undefined : status}
+                chasedUntil={chasedUntilByType?.get(type)}
+                onCooldownEnd={onCooldownEnd}
               />
             )
           })}

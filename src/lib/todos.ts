@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Todo } from '../types/database'
+import type { DocParentType, Todo } from '../types/database'
 
 /** Creates any newly-due document/infringement todos. Call before every todo-list read. */
 export async function reconcileTodos(): Promise<void> {
@@ -55,4 +55,42 @@ export function resolveTodoTargets(todos: Todo[]): Map<string, TodoTarget> {
   }
 
   return targets
+}
+
+/**
+ * All open document-sourced todos for one document slot's parent (a
+ * vehicle or driver) — including snoozed ones, so the page can show a
+ * chase countdown for a slot that's mid-cooldown even though it's
+ * excluded from fetchOpenTodos() until the cooldown ends.
+ */
+export async function fetchDocumentTodosForParent(
+  parentType: DocParentType,
+  parentId: string,
+): Promise<Todo[]> {
+  const { data, error } = await supabase
+    .from('todos')
+    .select('*')
+    .eq('status', 'open')
+    .eq('source_type', 'document')
+    .eq('parent_type', parentType)
+    .eq('parent_id', parentId)
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * All open document-sourced todos for every vehicle/driver under a client
+ * — including snoozed ones, so CompanyPage's vehicle/driver rows can show
+ * a chase countdown even though these are excluded from fetchOpenTodos()
+ * until their cooldown ends.
+ */
+export async function fetchDocumentTodosForClient(clientId: string): Promise<Todo[]> {
+  const { data, error } = await supabase
+    .from('todos')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('status', 'open')
+    .eq('source_type', 'document')
+  if (error) throw error
+  return data ?? []
 }

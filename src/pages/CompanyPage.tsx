@@ -12,7 +12,6 @@ import { TodoRow } from '../components/company/TodoRow'
 import { VehicleRow } from '../components/company/VehicleRow'
 import { EditClientDialog } from '../components/EditClientDialog'
 import { EmailChaseModal } from '../components/EmailChaseModal'
-import { Footer } from '../components/Footer'
 import { OnboardingBadge } from '../components/OnboardingBadge'
 import { SectionTitle } from '../components/SectionTitle'
 import { TopSubPage } from '../components/TopSubPage'
@@ -20,10 +19,16 @@ import { archiveRow } from '../lib/archive'
 import { latestDocsByParent } from '../lib/documents'
 import { notifyDataChanged } from '../lib/dataEvents'
 import { supabase } from '../lib/supabase'
-import { fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
+import {
+  fetchDocumentTodosForClient,
+  fetchOpenTodos,
+  reconcileTodos,
+  resolveTodoTargets,
+} from '../lib/todos'
 import type {
   Client,
   ClientContact,
+  DocType,
   Document,
   Driver,
   Infringement,
@@ -41,6 +46,7 @@ interface CompanyData {
   infringements: Infringement[]
   documents: Document[]
   todos: Todo[]
+  docTodos: Todo[]
   todoTargets: Map<string, { href: string }>
 }
 
@@ -89,6 +95,7 @@ export function CompanyPage() {
       infringementsRes,
       documentsRes,
       todos,
+      docTodos,
     ] = await Promise.all([
       supabase.from('clients').select('*').eq('id', clientId).is('archived_at', null).maybeSingle(),
       supabase.from('client_contacts').select('*').eq('client_id', clientId),
@@ -124,6 +131,7 @@ export function CompanyPage() {
         .is('archived_at', null)
         .order('uploaded_at', { ascending: false }),
       fetchOpenTodos(clientId),
+      fetchDocumentTodosForClient(clientId),
     ])
 
     const firstError = [
@@ -153,6 +161,7 @@ export function CompanyPage() {
       infringements: infringementsRes.data ?? [],
       documents: documentsRes.data ?? [],
       todos,
+      docTodos,
       todoTargets,
     })
     setError(null)
@@ -197,7 +206,7 @@ export function CompanyPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-dvh flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <p className="px-6 py-8 text-[14px] text-text-secondary">Loading…</p>
       </div>
     )
@@ -205,7 +214,7 @@ export function CompanyPage() {
 
   if (error || !data) {
     return (
-      <div className="flex min-h-dvh flex-col bg-bg-app">
+      <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <div className="px-6 py-8">
           <p className="text-[14px] text-danger-text">{error ?? 'Client not found.'}</p>
           <Link to="/" className="mt-2 inline-block text-[14px] font-medium text-accent">
@@ -225,11 +234,23 @@ export function CompanyPage() {
     infringements,
     documents,
     todos,
+    docTodos,
     todoTargets,
   } = data
 
   const vehicleDocs = latestDocsByParent(documents.filter((d) => d.parent_type === 'vehicle'))
   const driverDocs = latestDocsByParent(documents.filter((d) => d.parent_type === 'driver'))
+
+  // Which document slots (per vehicle/driver) are mid-cooldown from a
+  // recent chase, so their row can show a live countdown instead of the
+  // usual due date / "Not on file".
+  const chasedByParent = new Map<string, Map<DocType, string>>()
+  for (const t of docTodos) {
+    if (!t.parent_id || !t.doc_type || !t.snoozed_until) continue
+    if (new Date(t.snoozed_until).getTime() <= Date.now()) continue
+    if (!chasedByParent.has(t.parent_id)) chasedByParent.set(t.parent_id, new Map())
+    chasedByParent.get(t.parent_id)!.set(t.doc_type, t.snoozed_until)
+  }
 
   const vehiclesById = new Map(vehicles.map((v) => [v.id, v]))
   const driversById = new Map(drivers.map((d) => [d.id, d]))
@@ -261,7 +282,7 @@ export function CompanyPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-app">
+    <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
       <TopSubPage
         backTo="/"
         title={client.company_name}
@@ -341,6 +362,8 @@ export function CompanyPage() {
                 clientId={client.id}
                 vehicle={v}
                 docsByType={vehicleDocs.get(v.id) ?? new Map()}
+                chasedUntilByType={chasedByParent.get(v.id)}
+                onCooldownEnd={load}
                 onEdit={() => setDialog({ type: 'vehicle', vehicle: v })}
               />
             ))}
@@ -363,6 +386,8 @@ export function CompanyPage() {
                 clientId={client.id}
                 driver={d}
                 docsByType={driverDocs.get(d.id) ?? new Map()}
+                chasedUntilByType={chasedByParent.get(d.id)}
+                onCooldownEnd={load}
                 infringementCount={infringementCountByDriver.get(d.id) ?? 0}
                 onEdit={() => setDialog({ type: 'driver', driver: d })}
               />
@@ -427,8 +452,6 @@ export function CompanyPage() {
           </div>
         )}
       </div>
-
-      <Footer />
 
       {dialog?.type === 'client-edit' && (
         <EditClientDialog
