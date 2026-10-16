@@ -172,6 +172,7 @@ export function DriverPage() {
             label="Date of birth"
             value={driver.date_of_birth ? formatDate(driver.date_of_birth) : '—'}
           />
+          <InlineLabel label="Postcode" value={driver.postcode ?? '—'} />
           <NiNumberRow key={niRefreshKey} driverId={driver.id} />
         </div>
 

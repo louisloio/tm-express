@@ -63,6 +63,7 @@ export type Driver = {
   name: string
   licence_number: string | null
   date_of_birth: string | null
+  postcode: string | null
   created_at: string
   archived_at: string | null
 }

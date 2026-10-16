@@ -24,6 +24,7 @@ export function AddDriverDialog({
   const [name, setName] = useState(driver?.name ?? '')
   const [licenceNumber, setLicenceNumber] = useState(driver?.licence_number ?? '')
   const [dateOfBirth, setDateOfBirth] = useState(driver?.date_of_birth ?? '')
+  const [postcode, setPostcode] = useState(driver?.postcode ?? '')
   const [niNumber, setNiNumber] = useState('')
   const [niLoading, setNiLoading] = useState(isEditing)
   const [submitting, setSubmitting] = useState(false)
@@ -55,6 +56,8 @@ export function AddDriverDialog({
       name: name.trim(),
       licence_number: licenceNumber.trim() || null,
       date_of_birth: dateOfBirth || null,
+      // UK postcodes are written upper-case with a single space: "sw1a  1aa" → "SW1A 1AA".
+      postcode: postcode.trim().replace(/\s+/g, ' ').toUpperCase() || null,
     }
 
     const { data, error: saveError } = isEditing
@@ -121,6 +124,19 @@ export function AddDriverDialog({
               type="date"
               value={dateOfBirth}
               onChange={(e) => setDateOfBirth(e.target.value)}
+              className="ios-field"
+            />
+          </div>
+
+          <div>
+            <label className="ios-label">Postcode</label>
+            <input
+              type="text"
+              value={postcode}
+              onChange={(e) => setPostcode(e.target.value)}
+              placeholder="Optional"
+              autoComplete="postal-code"
+              autoCapitalize="characters"
               className="ios-field"
             />
           </div>
