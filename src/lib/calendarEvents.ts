@@ -6,6 +6,7 @@ import {
   performedDateOf,
 } from './cadence'
 import { addDaysISO, toISODate } from './dates'
+import { isMoreCurrent } from './documents'
 import { missingDates } from './gaps'
 import { supabase } from './supabase'
 import type { Client, Document, Driver, Vehicle, Visit } from '../types/database'
@@ -119,7 +120,7 @@ export function buildEvents({
   const driverById = new Map(drivers.map((d) => [d.id, d]))
   const events: CalendarEvent[] = []
 
-  // Documents: per (parent, type) only the newest upload is "current" and
+  // Documents: per (parent, type) only the current document (latest expiry) carries
   // carries the due date. Cadence-tracked checks (PMI, brake test, licence
   // check) also put every record on the day it was performed, and any cycle
   // with no record becomes a missing event. Other types show a superseded
@@ -152,9 +153,7 @@ export function buildEvents({
       continue
     }
 
-    const current = group.reduce((a, b) =>
-      new Date(b.uploaded_at) > new Date(a.uploaded_at) ? b : a,
-    )
+    const current = group.reduce((a, b) => (isMoreCurrent(b, a) ? b : a))
     const tracksPerformed = isPerformedDocType(sample.doc_type)
     const performed: string[] = []
 

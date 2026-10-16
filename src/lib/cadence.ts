@@ -45,9 +45,10 @@ export function isPerformedDocType(docType: DocType): boolean {
   return PERFORMED_DOC_TYPES.includes(docType)
 }
 
-/** "Date checked" for a licence check, "Date performed" for inspections. */
-export function performedDateLabel(docType: DocType): string {
-  return docType === 'Licence check' ? 'Date checked' : 'Date performed'
+/** Label for the date the document is dated — when the check / test / issue actually happened. */
+export function documentDateLabel(docType: DocType): string {
+  if (docType === 'Licence check') return 'Date checked'
+  return isPerformedDocType(docType) ? 'Date performed' : 'Date of document'
 }
 
 /**

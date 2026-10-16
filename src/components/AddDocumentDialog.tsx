@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { FileDropzone } from './FileDropzone'
 import { useAuth } from '../context/AuthContext'
-import { DOC_CADENCE_DAYS, isPerformedDocType, performedDateLabel } from '../lib/cadence'
+import { DOC_CADENCE_DAYS, isPerformedDocType, documentDateLabel } from '../lib/cadence'
 import { addDaysISO, toISODate } from '../lib/dates'
 import { supabase } from '../lib/supabase'
 import type { DocParentType, DocType } from '../types/database'
@@ -45,9 +45,10 @@ export function AddDocumentDialog({
   const { user } = useAuth()
   const [docType, setDocType] = useState<DocType>(initialDocType ?? docTypes[0])
   const firstType = initialDocType ?? docTypes[0]
-  // The date the check was actually carried out — stored in documents.checked_date
-  // (see supabase/011_driver_fields.sql). Defaults to today, since a check is
-  // normally logged the day it's done. Only for PMI / brake test / licence check.
+  // The date the document is dated — when the check / test / issue actually
+  // happened, which can be well before it's uploaded (stored in
+  // documents.checked_date, see supabase/011_driver_fields.sql). Defaults to
+  // today for PMI / brake test / licence check, which drive the next due date.
   const [performedDate, setPerformedDate] = useState(isPerformedDocType(firstType) ? today() : '')
   const [expiryDate, setExpiryDate] = useState(suggestExpiry(firstType, performedDate))
   const [reminderDays, setReminderDays] = useState(14)
@@ -68,7 +69,7 @@ export function AddDocumentDialog({
     setPerformedDate(value)
     // Re-base the suggested expiry on the new date. Still always editable
     // afterwards — editing the expiry field just overrides this suggestion.
-    if (value) setExpiryDate(suggestExpiry(docType, value))
+    if (value && tracksPerformed) setExpiryDate(suggestExpiry(docType, value))
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -100,7 +101,7 @@ export function AddDocumentDialog({
       file_path: path,
       expiry_date: expiryDate || null,
       reminder_days_before: reminderDays,
-      checked_date: tracksPerformed ? performedDate || null : null,
+      checked_date: performedDate || null,
     })
     setSubmitting(false)
 
@@ -127,32 +128,30 @@ export function AddDocumentDialog({
             <FileDropzone file={file} onChange={setFile} />
           </div>
 
-          {tracksPerformed && (
-            <div>
-              <label className="ios-label">{performedDateLabel(docType)}</label>
-              <input
-                type="date"
-                value={performedDate}
-                max={today()}
-                onChange={(e) => handlePerformedChange(e.target.value)}
-                className="ios-field"
-              />
-              {isLicenceCheck && (
-                <p className="mt-1.5 px-1 text-[13px] text-text-secondary">
-                  Perform the check at{' '}
-                  <a
-                    href="https://www.gov.uk/check-driving-licence"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-accent"
-                  >
-                    gov.uk/check-driving-licence
-                  </a>
-                  , then upload the licence summary it gives you.
-                </p>
-              )}
-            </div>
-          )}
+          <div>
+            <label className="ios-label">{documentDateLabel(docType)}</label>
+            <input
+              type="date"
+              value={performedDate}
+              max={today()}
+              onChange={(e) => handlePerformedChange(e.target.value)}
+              className="ios-field"
+            />
+            {isLicenceCheck && (
+              <p className="mt-1.5 px-1 text-[13px] text-text-secondary">
+                Perform the check at{' '}
+                <a
+                  href="https://www.gov.uk/check-driving-licence"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent"
+                >
+                  gov.uk/check-driving-licence
+                </a>
+                , then upload the licence summary it gives you.
+              </p>
+            )}
+          </div>
 
           <div>
             <label className="ios-label">Document type</label>

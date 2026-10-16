@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { isPerformedDocType } from '../../lib/cadence'
 import { supabase } from '../../lib/supabase'
 import { fileNameFromPath, formatDate, formatDateTime, getDocStatus } from '../../lib/format'
 import type { Document } from '../../types/database'
@@ -72,7 +73,11 @@ export function DocumentRow({ doc, parentLabel, onArchive }: DocumentRowProps) {
         <span className="text-[15px] text-text-tertiary">{formatDateTime(doc.uploaded_at)}</span>
         {doc.checked_date && (
           <span className="text-[15px] text-text-tertiary">
-            {doc.doc_type === 'Licence check' ? 'Checked' : 'Performed'}{' '}
+            {doc.doc_type === 'Licence check'
+              ? 'Checked'
+              : isPerformedDocType(doc.doc_type)
+                ? 'Performed'
+                : 'Dated'}{' '}
             {formatDate(doc.checked_date)}
           </span>
         )}
