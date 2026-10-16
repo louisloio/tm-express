@@ -103,6 +103,9 @@ export type DocType =
   | 'MOT'
   | 'VED'
   | 'Insurance'
+  /** The driver's actual driving licence document — tracked by its own expiry, like any other doc slot. */
+  | 'Licence validity'
+  /** A DVLA licence-check result (gov.uk/check-driving-licence) — carries a 'Date checked' alongside the usual expiry reminder. */
   | 'Licence check'
   | 'CPC'
   | 'Infringement report'

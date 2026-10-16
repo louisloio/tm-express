@@ -24,9 +24,11 @@ export function DriverRow({
   infringementCount,
   onEdit,
 }: DriverRowProps) {
-  const licence = docsByType.get('Licence check')
+  const licenceValidity = docsByType.get('Licence validity')
+  const licenceCheck = docsByType.get('Licence check')
   const cpc = docsByType.get('CPC')
-  const licenceStatus = getDocSlotStatus(licence)
+  const licenceValidityStatus = getDocSlotStatus(licenceValidity)
+  const licenceCheckStatus = getDocSlotStatus(licenceCheck)
   const cpcStatus = getDocSlotStatus(cpc)
 
   return (
@@ -41,9 +43,18 @@ export function DriverRow({
         </div>
         <div className="flex flex-col gap-1">
           <DueLabel
+            label="Licence validity due"
+            value={
+              licenceValidity?.expiry_date ? formatDate(licenceValidity.expiry_date) : 'Not on file'
+            }
+            tone={licenceValidityStatus === 'ok' ? undefined : licenceValidityStatus}
+            chasedUntil={chasedUntilByType?.get('Licence validity')}
+            onCooldownEnd={onCooldownEnd}
+          />
+          <DueLabel
             label="Licence check due"
-            value={licence?.expiry_date ? formatDate(licence.expiry_date) : 'Not on file'}
-            tone={licenceStatus === 'ok' ? undefined : licenceStatus}
+            value={licenceCheck?.expiry_date ? formatDate(licenceCheck.expiry_date) : 'Not on file'}
+            tone={licenceCheckStatus === 'ok' ? undefined : licenceCheckStatus}
             chasedUntil={chasedUntilByType?.get('Licence check')}
             onCooldownEnd={onCooldownEnd}
           />

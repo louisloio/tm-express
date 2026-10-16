@@ -95,3 +95,20 @@ export const ClockIcon = (p: SVGProps<SVGSVGElement>) => (
     <path d="M12 7v5l3.5 2" />
   </Glyph>
 )
+
+export const HouseIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Glyph strokeWidth={1.8} {...p}>
+    <path d="M4 10.5 12 4l8 6.5" />
+    <path d="M6 9.5V19a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9.5" />
+    <path d="M10 20v-5h4v5" />
+  </Glyph>
+)
+
+export const ChecklistIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Glyph strokeWidth={1.8} {...p}>
+    <path d="M9.5 6h10M9.5 12h10M9.5 18h10" />
+    <path d="m4 6 1.2 1.2L7.5 5" />
+    <path d="m4 12 1.2 1.2L7.5 11" />
+    <path d="m4 18 1.2 1.2L7.5 17" />
+  </Glyph>
+)

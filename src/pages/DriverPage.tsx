@@ -15,7 +15,12 @@ import { fetchDocumentTodosForParent } from '../lib/todos'
 import { supabase } from '../lib/supabase'
 import type { DocType, Document, Driver, Todo } from '../types/database'
 
-const DOC_TYPES = ['Licence check', 'CPC'] as const
+// The driver's own documents. 'Licence check' (the DVLA check result) gets
+// its own section below rather than living in this list — it's a
+// recurring action the TM performs externally at gov.uk, not just a file
+// slot like the others.
+const DOC_TYPES = ['Licence validity', 'CPC'] as const
+const LICENCE_CHECK_TYPE = 'Licence check' as const
 
 /**
  * "National Insurance no." row: masked by default, decrypted on demand —
@@ -152,6 +157,9 @@ export function DriverPage() {
     }
   }
 
+  const licenceCheckDoc = latestByType.get(LICENCE_CHECK_TYPE)
+  const licenceCheckStatus = getDocSlotStatus(licenceCheckDoc)
+
   return (
     <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
       <TopSubPage backTo={backTo} title={driver.name} onEdit={() => setEditOpen(true)} />
@@ -187,6 +195,39 @@ export function DriverPage() {
           })}
         </div>
 
+        <SectionTitle
+          title="Licence check"
+          addLabel="Log a DVLA check"
+          onAdd={() => setUpload({ docType: LICENCE_CHECK_TYPE })}
+        />
+        <p className="px-5 pb-2 pt-0 text-[13px] text-text-secondary">
+          Run the check at{' '}
+          <a
+            href="https://www.gov.uk/check-driving-licence"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent"
+          >
+            gov.uk/check-driving-licence
+          </a>
+          , then log the licence summary it gives you here.
+        </p>
+        <div className="ios-group [&>*]:px-4 [&>*]:py-[11px]">
+          <DocSlotRow
+            label={LICENCE_CHECK_TYPE}
+            value={
+              licenceCheckDoc?.expiry_date
+                ? `Expires ${formatDate(licenceCheckDoc.expiry_date)}`
+                : 'Not on file'
+            }
+            tone={licenceCheckStatus === 'ok' ? undefined : licenceCheckStatus}
+            chasedUntil={chasedUntilByType.get(LICENCE_CHECK_TYPE)}
+            onCooldownEnd={load}
+            onOpen={() => setUpload({ docType: LICENCE_CHECK_TYPE })}
+            onFile={(file) => setUpload({ docType: LICENCE_CHECK_TYPE, file })}
+          />
+        </div>
+
         {documents.length > 0 && (
           <>
             <SectionTitle title="Document history" />
@@ -209,7 +250,7 @@ export function DriverPage() {
           clientId={clientId}
           parentType="driver"
           parentId={driverId}
-          docTypes={[...DOC_TYPES]}
+          docTypes={[...DOC_TYPES, LICENCE_CHECK_TYPE]}
           initialDocType={upload.docType}
           initialFile={upload.file}
           onClose={() => setUpload(null)}

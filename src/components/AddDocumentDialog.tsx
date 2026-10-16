@@ -5,7 +5,10 @@ import { supabase } from '../lib/supabase'
 import type { DocParentType, DocType } from '../types/database'
 
 // Typical renewal interval per doc type, used to auto-suggest an expiry date
-// (spec section 5: "auto-suggested ... but always editable").
+// (spec section 5: "auto-suggested ... but always editable"). No entry for
+// 'Licence validity' — a photocard's own expiry varies per driver (it's
+// printed on the licence itself) rather than following a fixed interval,
+// so it's left for the TM to type rather than guessed.
 const DEFAULT_INTERVAL_DAYS: Partial<Record<DocType, number>> = {
   MOT: 365,
   VED: 365,
@@ -71,21 +74,23 @@ export function AddDocumentDialog({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!file) {
-      setError('Choose a file to upload.')
-      return
-    }
     if (!user) return
 
     setSubmitting(true)
     setError(null)
 
-    const path = `${user.id}/${clientId}/${parentType}/${parentId}/${Date.now()}-${file.name}`
-    const { error: uploadError } = await supabase.storage.from('documents').upload(path, file)
-    if (uploadError) {
-      setSubmitting(false)
-      setError(uploadError.message)
-      return
+    // The file is optional — a document can be logged with just its dates
+    // and the file attached later (file_path is nullable; DocumentRow shows
+    // "No file uploaded" for those).
+    let path: string | null = null
+    if (file) {
+      path = `${user.id}/${clientId}/${parentType}/${parentId}/${Date.now()}-${file.name}`
+      const { error: uploadError } = await supabase.storage.from('documents').upload(path, file)
+      if (uploadError) {
+        setSubmitting(false)
+        setError(uploadError.message)
+        return
+      }
     }
 
     const { error: insertError } = await supabase.from('documents').insert({
@@ -119,7 +124,7 @@ export function AddDocumentDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 pb-5 pt-3">
           <div>
-            <label className="ios-label">File</label>
+            <label className="ios-label">File (optional)</label>
             <FileDropzone file={file} onChange={setFile} />
           </div>
 
@@ -132,6 +137,18 @@ export function AddDocumentDialog({
                 onChange={(e) => setCheckedDate(e.target.value)}
                 className="ios-field"
               />
+              <p className="mt-1.5 px-1 text-[13px] text-text-secondary">
+                Perform the check at{' '}
+                <a
+                  href="https://www.gov.uk/check-driving-licence"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent"
+                >
+                  gov.uk/check-driving-licence
+                </a>
+                , then upload the licence summary it gives you.
+              </p>
             </div>
           )}
 
@@ -178,7 +195,7 @@ export function AddDocumentDialog({
               Cancel
             </button>
             <button type="submit" disabled={submitting} className="flex-1 ios-btn-primary">
-              {submitting ? 'Uploading…' : 'Upload'}
+              {submitting ? (file ? 'Uploading…' : 'Saving…') : file ? 'Upload' : 'Save'}
             </button>
           </div>
         </form>

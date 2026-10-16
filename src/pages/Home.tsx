@@ -2,13 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useMatch } from 'react-router-dom'
 import { AddClientDialog } from '../components/AddClientDialog'
 import { TodoRow } from '../components/company/TodoRow'
-import { EditClientDialog } from '../components/EditClientDialog'
 import { EmailChaseModal } from '../components/EmailChaseModal'
 import { Header } from '../components/Header'
 import { PlusIcon } from '../components/icons'
 import { OnboardingBadge } from '../components/OnboardingBadge'
-import { EditButton } from '../components/EditButton'
-import { archiveRow } from '../lib/archive'
+import { TAB_BAR_CONTENT_HEIGHT, TabBar } from '../components/TabBar'
 import { onDataChanged } from '../lib/dataEvents'
 import { supabase } from '../lib/supabase'
 import { fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
@@ -25,7 +23,6 @@ export function Home() {
   const [error, setError] = useState<string | null>(null)
   const [todoWarning, setTodoWarning] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [chaseTarget, setChaseTarget] = useState<{
     todo: Todo
     contacts: ClientContact[]
@@ -97,16 +94,15 @@ export function Home() {
     setChaseTarget({ todo, contacts: data ?? [] })
   }
 
-  async function handleArchiveClient(id: string) {
-    await archiveRow('clients', id)
-    void loadClients()
-  }
-
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
+    <div className="flex min-h-dvh flex-col bg-bg-app">
       <div className="ios-bar sticky top-0 z-30 border-b-[0.5px] border-border-divider pt-[env(safe-area-inset-top)]">
         <Header bare />
-        <div className="mx-auto w-full max-w-[600px] px-4 pb-2.5">
+        {/* Tab switching moves to the bottom TabBar on phone (md:hidden
+            below); tablet/desktop keeps this segmented control since a bar
+            fixed to the viewport's bottom edge wouldn't sit right next to
+            the detail pane in the split layout. */}
+        <div className="mx-auto hidden w-full max-w-[600px] px-4 pb-2.5 md:block">
           <div role="tablist" className="ios-segmented">
             <SegmentButton selected={tab === 'dashboard'} onClick={() => setTab('dashboard')}>
               Dashboard
@@ -118,7 +114,13 @@ export function Home() {
         </div>
       </div>
 
-      <div className="mx-auto flex w-full max-w-[600px] flex-1 flex-col">
+      {/* Reserves room for the fixed bottom TabBar on phone so the last row
+          never sits behind it; md+ has no TabBar (see above) so it only
+          needs the plain safe-area inset. */}
+      <div
+        className="mx-auto flex w-full max-w-[600px] flex-1 flex-col pb-[calc(var(--tab-bar-h)+env(safe-area-inset-bottom))] md:pb-[env(safe-area-inset-bottom)]"
+        style={{ ['--tab-bar-h' as string]: `${TAB_BAR_CONTENT_HEIGHT}px` }}
+      >
         {tab === 'dashboard' ? (
           <>
             <div className="flex items-center justify-between pl-5 pr-2 pb-1 pt-4">
@@ -171,7 +173,6 @@ export function Home() {
                       </div>
                       <OnboardingBadge status={client.onboarding_status} />
                     </Link>
-                    <EditButton onClick={() => setEditingClient(client)} className="!text-[15px]" />
                   </li>
                 ))}
               </ul>
@@ -206,25 +207,13 @@ export function Home() {
         )}
       </div>
 
+      <TabBar tab={tab} todoCount={todos.length} onSelect={setTab} />
+
       {dialogOpen && (
         <AddClientDialog
           onClose={() => setDialogOpen(false)}
           onCreated={() => {
             setDialogOpen(false)
-            void loadClients()
-          }}
-        />
-      )}
-      {editingClient && (
-        <EditClientDialog
-          client={editingClient}
-          onArchive={async () => {
-            await handleArchiveClient(editingClient.id)
-            setEditingClient(null)
-          }}
-          onClose={() => setEditingClient(null)}
-          onSaved={() => {
-            setEditingClient(null)
             void loadClients()
           }}
         />
