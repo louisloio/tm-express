@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { FileDropzone } from './FileDropzone'
 import { useAuth } from '../context/AuthContext'
-import { DOC_CADENCE_DAYS, isPerformedDocType, documentDateLabel } from '../lib/cadence'
-import { addDaysISO, toISODate } from '../lib/dates'
+import { documentDateLabel, isPerformedDocType, shiftByCadence } from '../lib/cadence'
+import { toISODate } from '../lib/dates'
 import { supabase } from '../lib/supabase'
 import type { DocParentType, DocType } from '../types/database'
 
@@ -10,14 +10,12 @@ function today(): string {
   return toISODate(new Date())
 }
 
-// The renewal interval per doc type (src/lib/cadence.ts) auto-suggests the
-// expiry date (spec section 5: "auto-suggested ... but always editable").
-// For checks tracked by the date they were performed, the next one counts
-// from that date, not from the day the paperwork is uploaded.
+// The renewal cadence per doc type (src/lib/cadence.ts) auto-fills the expiry
+// date (spec section 5: "auto-suggested ... but always editable"), counted
+// from the date performed — e.g. PMI 1 Oct → 12 Nov, MOT 1 Jan 2026 → 1 Jan 2027.
+// Types with no fixed cadence (licence validity) are left for the TM to type.
 function suggestExpiry(docType: DocType, performed: string): string {
-  const days = DOC_CADENCE_DAYS[docType]
-  if (!days) return ''
-  return addDaysISO(performed || today(), days)
+  return shiftByCadence(docType, performed || today()) ?? ''
 }
 
 interface AddDocumentDialogProps {
@@ -55,7 +53,6 @@ export function AddDocumentDialog({
   const [file, setFile] = useState<File | null>(initialFile ?? null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const tracksPerformed = isPerformedDocType(docType)
   const isLicenceCheck = docType === 'Licence check'
 
   function handleDocTypeChange(next: DocType) {
@@ -67,9 +64,9 @@ export function AddDocumentDialog({
 
   function handlePerformedChange(value: string) {
     setPerformedDate(value)
-    // Re-base the suggested expiry on the new date. Still always editable
-    // afterwards — editing the expiry field just overrides this suggestion.
-    if (value && tracksPerformed) setExpiryDate(suggestExpiry(docType, value))
+    // Re-base the expiry on the new date. Still always editable afterwards —
+    // typing in the expiry field just overrides this suggestion.
+    if (value) setExpiryDate(suggestExpiry(docType, value))
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -129,6 +126,21 @@ export function AddDocumentDialog({
           </div>
 
           <div>
+            <label className="ios-label">Document type</label>
+            <select
+              value={docType}
+              onChange={(e) => handleDocTypeChange(e.target.value as DocType)}
+              className="ios-field"
+            >
+              {docTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label className="ios-label">{documentDateLabel(docType)}</label>
             <input
               type="date"
@@ -151,21 +163,6 @@ export function AddDocumentDialog({
                 , then upload the licence summary it gives you.
               </p>
             )}
-          </div>
-
-          <div>
-            <label className="ios-label">Document type</label>
-            <select
-              value={docType}
-              onChange={(e) => handleDocTypeChange(e.target.value as DocType)}
-              className="ios-field"
-            >
-              {docTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
           </div>
 
           <div>

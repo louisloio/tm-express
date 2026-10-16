@@ -1,5 +1,5 @@
 import type { DocType } from '../types/database'
-import { addDaysISO } from './dates'
+import { addDaysISO, addMonthsISO } from './dates'
 
 /**
  * How often each recurring document / check comes round. One source of truth
@@ -16,6 +16,30 @@ export const DOC_CADENCE_DAYS: Partial<Record<DocType, number>> = {
   'Brake test': 42, // every 6 weeks (all current clients)
   'Licence check': 182, // every 6 months
   CPC: 1825, // 5 years
+}
+
+/**
+ * Document types whose cycle is counted in calendar months, so 1 Jan 2026
+ * renews on 1 Jan 2027 whatever the leap years do. The day counts above stay
+ * as the approximate cycle length for gap detection.
+ */
+const DOC_CADENCE_MONTHS: Partial<Record<DocType, number>> = {
+  MOT: 12,
+  VED: 12,
+  Insurance: 12,
+  'Licence check': 6,
+  CPC: 60,
+}
+
+/**
+ * The date one cycle after (or, with sign -1, before) `from` for this document
+ * type, or null when the type has no fixed cadence.
+ */
+export function shiftByCadence(docType: DocType, from: string, sign: 1 | -1 = 1): string | null {
+  const months = DOC_CADENCE_MONTHS[docType]
+  if (months) return addMonthsISO(from, sign * months)
+  const days = DOC_CADENCE_DAYS[docType]
+  return days ? addDaysISO(from, sign * days) : null
 }
 
 /** A depot visit is due once a year per client. */
@@ -45,10 +69,9 @@ export function isPerformedDocType(docType: DocType): boolean {
   return PERFORMED_DOC_TYPES.includes(docType)
 }
 
-/** Label for the date the document is dated — when the check / test / issue actually happened. */
+/** Label for the date the work behind a document actually happened (test, check, inspection, issue). */
 export function documentDateLabel(docType: DocType): string {
-  if (docType === 'Licence check') return 'Date checked'
-  return isPerformedDocType(docType) ? 'Date performed' : 'Date of document'
+  return docType === 'Licence check' ? 'Date checked' : 'Date performed'
 }
 
 /**
@@ -62,6 +85,5 @@ export function performedDateOf(doc: {
   expiry_date: string | null
 }): string | null {
   if (doc.checked_date) return doc.checked_date
-  const cadence = DOC_CADENCE_DAYS[doc.doc_type]
-  return doc.expiry_date && cadence ? addDaysISO(doc.expiry_date, -cadence) : null
+  return doc.expiry_date ? shiftByCadence(doc.doc_type, doc.expiry_date, -1) : null
 }

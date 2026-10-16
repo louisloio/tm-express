@@ -65,7 +65,7 @@ export function AddVisitDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 pb-5 pt-3">
           <div>
-            <label className="ios-label">Date</label>
+            <label className="ios-label">Date performed</label>
             <input
               type="date"
               required

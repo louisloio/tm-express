@@ -164,9 +164,11 @@ export function buildEvents({
         subject,
         href,
       }
-      const done = tracksPerformed ? performedDateOf(doc) : null
+      // The date it was actually done; cadence-tracked checks fall back to
+      // expiry minus one cycle for records saved before the date existed.
+      const done = tracksPerformed ? performedDateOf(doc) : doc.checked_date
       if (done && done <= today) {
-        performed.push(done)
+        if (tracksPerformed) performed.push(done)
         events.push({ ...base, id: `done-${doc.id}`, date: done, status: 'done' })
       }
       if (doc.id === current.id) {
@@ -176,7 +178,8 @@ export function buildEvents({
           date: doc.expiry_date!,
           status: statusFor(doc.expiry_date!, today, doc.reminder_days_before),
         })
-      } else if (!tracksPerformed) {
+      } else if (!done) {
+        // Superseded and undated: show it as done on its own expiry date.
         events.push({ ...base, id: `doc-${doc.id}`, date: doc.expiry_date!, status: 'done' })
       }
     }

@@ -20,3 +20,14 @@ export function addDaysISO(iso: string, days: number): string {
 export function daysBetween(fromIso: string, toIso: string): number {
   return Math.round((parseISODate(toIso).getTime() - parseISODate(fromIso).getTime()) / 86_400_000)
 }
+
+/** Calendar-month arithmetic: 1 Jan + 12 months = 1 Jan, and a day that doesn't exist clamps (31 Aug + 6 months = 28 Feb). */
+export function addMonthsISO(iso: string, months: number): string {
+  const d = parseISODate(iso)
+  const day = d.getDate()
+  d.setDate(1)
+  d.setMonth(d.getMonth() + months)
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+  d.setDate(Math.min(day, lastDay))
+  return toISODate(d)
+}
