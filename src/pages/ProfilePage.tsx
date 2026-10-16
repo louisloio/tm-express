@@ -10,10 +10,16 @@ import { startMailboxOAuth } from '../lib/mailboxOAuth'
 import { supabase } from '../lib/supabase'
 import type { Mailbox } from '../types/database'
 
-/** Gmail/Microsoft mailboxes have no settings to edit, so they get a direct Disconnect. */
+/**
+ * Gmail/Microsoft mailboxes have no settings to edit, so they get a direct
+ * Disconnect — a two-step one (tap, then confirm). The confirm step takes a
+ * full row of its own so it never overlaps the address, and a failed
+ * disconnect says so instead of leaving the button stuck.
+ */
 function DisconnectButton({ onDisconnect }: { onDisconnect: () => Promise<void> }) {
   const [confirming, setConfirming] = useState(false)
   const [working, setWorking] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!confirming) {
     return (
@@ -27,26 +33,38 @@ function DisconnectButton({ onDisconnect }: { onDisconnect: () => Promise<void> 
     )
   }
   return (
-    <div className="flex shrink-0 items-center gap-2 pr-1">
-      <button
-        type="button"
-        onClick={() => setConfirming(false)}
-        disabled={working}
-        className="rounded-full bg-fill px-3 py-1.5 text-[15px] font-semibold text-accent active:opacity-60"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        onClick={async () => {
-          setWorking(true)
-          await onDisconnect()
-        }}
-        disabled={working}
-        className="rounded-full bg-danger-text px-3 py-1.5 text-[15px] font-semibold text-white active:opacity-60 disabled:opacity-50"
-      >
-        {working ? '…' : 'Disconnect'}
-      </button>
+    <div className="flex w-full flex-col items-end gap-1.5 pr-1">
+      {error && <p className="w-full text-[13px] text-danger-text">{error}</p>}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setConfirming(false)
+            setError(null)
+          }}
+          disabled={working}
+          className="rounded-full bg-fill px-3 py-1.5 text-[15px] font-semibold text-accent active:opacity-60"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={async () => {
+            setWorking(true)
+            setError(null)
+            try {
+              await onDisconnect()
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Could not disconnect. Try again.')
+              setWorking(false)
+            }
+          }}
+          disabled={working}
+          className="rounded-full bg-danger-text px-3 py-1.5 text-[15px] font-semibold text-white active:opacity-60 disabled:opacity-50"
+        >
+          {working ? '…' : 'Disconnect'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -299,8 +317,8 @@ export function ProfilePage() {
           ) : (
             <ul className="ios-group !mx-0">
               {mailboxes.map((mailbox) => (
-                <li key={mailbox.id} className="flex items-center gap-1 py-2.5 pl-4 pr-1">
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <li key={mailbox.id} className="flex flex-wrap items-center gap-1 py-2.5 pl-4 pr-1">
+                  <div className="flex min-w-0 flex-1 basis-40 flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-[17px] font-medium text-text-primary">
                         {mailbox.label || mailbox.email}
