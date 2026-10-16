@@ -4,8 +4,9 @@ import {
   VISIT_CADENCE_DAYS,
   isPerformedDocType,
   performedDateOf,
+  shiftByCadence,
 } from './cadence'
-import { addDaysISO, toISODate } from './dates'
+import { addDaysISO, addMonthsISO, toISODate } from './dates'
 import { isMoreCurrent } from './documents'
 import { missingDates } from './gaps'
 import { supabase } from './supabase'
@@ -17,8 +18,13 @@ import type { Client, Document, Driver, Vehicle, Visit } from '../types/database
  * - upcoming: due later
  * - done:     a past item that a newer document / visit has since replaced
  * - missing:  a cycle of a fixed-cadence check (PMI…) that has no record at all
+ * - planned:  a future occurrence projected from the current due date by the
+ *             document's cadence (not a real due date yet)
  */
-export type EventStatus = 'overdue' | 'missing' | 'warning' | 'upcoming' | 'done'
+export type EventStatus = 'overdue' | 'missing' | 'warning' | 'upcoming' | 'planned' | 'done'
+
+/** How far ahead recurring documents are projected. */
+const PLANNING_HORIZON_MONTHS = 12
 
 export interface CalendarEvent {
   id: string
@@ -115,6 +121,7 @@ export function buildEvents({
   visits: Visit[]
   today?: string
 }): CalendarEvent[] {
+  const horizon = addMonthsISO(today, PLANNING_HORIZON_MONTHS)
   const activeClients = new Set(clients.map((c) => c.id))
   const vehicleById = new Map(vehicles.map((v) => [v.id, v]))
   const driverById = new Map(drivers.map((d) => [d.id, d]))
@@ -178,6 +185,15 @@ export function buildEvents({
           date: doc.expiry_date!,
           status: statusFor(doc.expiry_date!, today, doc.reminder_days_before),
         })
+        // Project the following occurrences a year ahead. Not when this one is
+        // already overdue: the real next date depends on when it actually gets done.
+        if (doc.expiry_date! >= today) {
+          let next = shiftByCadence(doc.doc_type, doc.expiry_date!)
+          while (next && next <= horizon) {
+            events.push({ ...base, id: `planned-${doc.id}-${next}`, date: next, status: 'planned' })
+            next = shiftByCadence(doc.doc_type, next)
+          }
+        }
       } else if (!done) {
         // Superseded and undated: show it as done on its own expiry date.
         events.push({ ...base, id: `doc-${doc.id}`, date: doc.expiry_date!, status: 'done' })
