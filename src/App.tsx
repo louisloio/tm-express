@@ -3,6 +3,7 @@ import { EmptyDetail } from './components/EmptyDetail'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { SplitLayout } from './components/SplitLayout'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { CalendarRoute } from './pages/CalendarPage'
 import { CompanyPage } from './pages/CompanyPage'
 import { DriverPage } from './pages/DriverPage'
 import { ForgotPassword } from './pages/ForgotPassword'
@@ -57,7 +58,9 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<EmptyDetail />} />
+        <Route index element={<CalendarRoute />} />
+        <Route path="/clients" element={<EmptyDetail />} />
+        <Route path="/todo" element={<EmptyDetail />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/oauth/:provider/callback" element={<OAuthCallbackPage />} />
         <Route path="/clients/:clientId" element={<CompanyPage />} />

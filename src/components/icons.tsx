@@ -104,6 +104,26 @@ export const HouseIcon = (p: SVGProps<SVGSVGElement>) => (
   </Glyph>
 )
 
+/** calendar */
+export const CalendarIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Glyph strokeWidth={1.8} {...p}>
+    <rect x="4" y="5.5" width="16" height="14.5" rx="2.5" />
+    <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" />
+  </Glyph>
+)
+
+export const ChevronRightIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Glyph strokeWidth={2.4} {...p}>
+    <path d="m9 5 7 7-7 7" />
+  </Glyph>
+)
+
+export const CheckmarkIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Glyph strokeWidth={2.6} {...p}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </Glyph>
+)
+
 export const ChecklistIcon = (p: SVGProps<SVGSVGElement>) => (
   <Glyph strokeWidth={1.8} {...p}>
     <path d="M9.5 6h10M9.5 12h10M9.5 18h10" />

@@ -1,34 +1,23 @@
 import { useState, type FormEvent } from 'react'
 import { FileDropzone } from './FileDropzone'
 import { useAuth } from '../context/AuthContext'
+import { DOC_CADENCE_DAYS, isPerformedDocType, performedDateLabel } from '../lib/cadence'
+import { addDaysISO, toISODate } from '../lib/dates'
 import { supabase } from '../lib/supabase'
 import type { DocParentType, DocType } from '../types/database'
 
-// Typical renewal interval per doc type, used to auto-suggest an expiry date
-// (spec section 5: "auto-suggested ... but always editable"). No entry for
-// 'Licence validity' — a photocard's own expiry varies per driver (it's
-// printed on the licence itself) rather than following a fixed interval,
-// so it's left for the TM to type rather than guessed.
-const DEFAULT_INTERVAL_DAYS: Partial<Record<DocType, number>> = {
-  MOT: 365,
-  VED: 365,
-  Insurance: 365,
-  PMI: 56,
-  'Brake test': 90,
-  'Licence check': 365,
-  CPC: 1825,
-}
-
-function suggestExpiry(docType: DocType): string {
-  const days = DEFAULT_INTERVAL_DAYS[docType]
-  if (!days) return ''
-  const date = new Date()
-  date.setDate(date.getDate() + days)
-  return date.toISOString().slice(0, 10)
-}
-
 function today(): string {
-  return new Date().toISOString().slice(0, 10)
+  return toISODate(new Date())
+}
+
+// The renewal interval per doc type (src/lib/cadence.ts) auto-suggests the
+// expiry date (spec section 5: "auto-suggested ... but always editable").
+// For checks tracked by the date they were performed, the next one counts
+// from that date, not from the day the paperwork is uploaded.
+function suggestExpiry(docType: DocType, performed: string): string {
+  const days = DOC_CADENCE_DAYS[docType]
+  if (!days) return ''
+  return addDaysISO(performed || today(), days)
 }
 
 interface AddDocumentDialogProps {
@@ -55,21 +44,31 @@ export function AddDocumentDialog({
 }: AddDocumentDialogProps) {
   const { user } = useAuth()
   const [docType, setDocType] = useState<DocType>(initialDocType ?? docTypes[0])
-  const [expiryDate, setExpiryDate] = useState(suggestExpiry(initialDocType ?? docTypes[0]))
+  const firstType = initialDocType ?? docTypes[0]
+  // The date the check was actually carried out — stored in documents.checked_date
+  // (see supabase/011_driver_fields.sql). Defaults to today, since a check is
+  // normally logged the day it's done. Only for PMI / brake test / licence check.
+  const [performedDate, setPerformedDate] = useState(isPerformedDocType(firstType) ? today() : '')
+  const [expiryDate, setExpiryDate] = useState(suggestExpiry(firstType, performedDate))
   const [reminderDays, setReminderDays] = useState(14)
-  // Only meaningful for 'Licence check' — the date the check was actually
-  // carried out (see supabase/011_driver_fields.sql). Defaults to today,
-  // since a check is normally logged the day it's done.
-  const [checkedDate, setCheckedDate] = useState(initialDocType === 'Licence check' ? today() : '')
   const [file, setFile] = useState<File | null>(initialFile ?? null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const tracksPerformed = isPerformedDocType(docType)
   const isLicenceCheck = docType === 'Licence check'
 
   function handleDocTypeChange(next: DocType) {
+    const performed = isPerformedDocType(next) ? today() : ''
     setDocType(next)
-    setExpiryDate(suggestExpiry(next))
-    setCheckedDate(next === 'Licence check' ? today() : '')
+    setPerformedDate(performed)
+    setExpiryDate(suggestExpiry(next, performed))
+  }
+
+  function handlePerformedChange(value: string) {
+    setPerformedDate(value)
+    // Re-base the suggested expiry on the new date. Still always editable
+    // afterwards — editing the expiry field just overrides this suggestion.
+    if (value) setExpiryDate(suggestExpiry(docType, value))
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -101,7 +100,7 @@ export function AddDocumentDialog({
       file_path: path,
       expiry_date: expiryDate || null,
       reminder_days_before: reminderDays,
-      checked_date: isLicenceCheck ? checkedDate || null : null,
+      checked_date: tracksPerformed ? performedDate || null : null,
     })
     setSubmitting(false)
 
@@ -128,27 +127,30 @@ export function AddDocumentDialog({
             <FileDropzone file={file} onChange={setFile} />
           </div>
 
-          {isLicenceCheck && (
+          {tracksPerformed && (
             <div>
-              <label className="ios-label">Date checked</label>
+              <label className="ios-label">{performedDateLabel(docType)}</label>
               <input
                 type="date"
-                value={checkedDate}
-                onChange={(e) => setCheckedDate(e.target.value)}
+                value={performedDate}
+                max={today()}
+                onChange={(e) => handlePerformedChange(e.target.value)}
                 className="ios-field"
               />
-              <p className="mt-1.5 px-1 text-[13px] text-text-secondary">
-                Perform the check at{' '}
-                <a
-                  href="https://www.gov.uk/check-driving-licence"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent"
-                >
-                  gov.uk/check-driving-licence
-                </a>
-                , then upload the licence summary it gives you.
-              </p>
+              {isLicenceCheck && (
+                <p className="mt-1.5 px-1 text-[13px] text-text-secondary">
+                  Perform the check at{' '}
+                  <a
+                    href="https://www.gov.uk/check-driving-licence"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent"
+                  >
+                    gov.uk/check-driving-licence
+                  </a>
+                  , then upload the licence summary it gives you.
+                </p>
+              )}
             </div>
           )}
 

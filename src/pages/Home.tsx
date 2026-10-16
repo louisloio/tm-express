@@ -1,21 +1,41 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useMatch } from 'react-router-dom'
+import { Link, useLocation, useMatch, useNavigate } from 'react-router-dom'
 import { AddClientDialog } from '../components/AddClientDialog'
+import { ClientFilter } from '../components/calendar/ClientFilter'
 import { TodoRow } from '../components/company/TodoRow'
 import { EmailChaseModal } from '../components/EmailChaseModal'
 import { Header } from '../components/Header'
 import { PlusIcon } from '../components/icons'
 import { OnboardingBadge } from '../components/OnboardingBadge'
-import { TAB_BAR_CONTENT_HEIGHT, TabBar } from '../components/TabBar'
+import { TAB_BAR_CONTENT_HEIGHT, TabBar, type HomeTab } from '../components/TabBar'
 import { onDataChanged } from '../lib/dataEvents'
 import { supabase } from '../lib/supabase'
+import { MD_QUERY, useMediaQuery } from '../lib/useMediaQuery'
 import { fetchOpenTodos, reconcileTodos, resolveTodoTargets } from '../lib/todos'
 import type { Client, ClientContact, Todo } from '../types/database'
+import { CalendarPage } from './CalendarPage'
 
-type Tab = 'dashboard' | 'todo'
+type Tab = HomeTab
+
+/** The tab each top-level route belongs to; other routes (profile, OAuth…) keep the last one. */
+function tabForPath(pathname: string): Tab | null {
+  if (pathname === '/') return 'calendar'
+  if (pathname === '/todo') return 'todo'
+  if (pathname === '/clients' || pathname.startsWith('/clients/')) return 'clients'
+  return null
+}
 
 export function Home() {
-  const [tab, setTab] = useState<Tab>('dashboard')
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const isWide = useMediaQuery(MD_QUERY)
+  const pathTab = tabForPath(pathname)
+  const [lastTab, setLastTab] = useState<Tab>('calendar')
+  useEffect(() => {
+    if (pathTab) setLastTab(pathTab)
+  }, [pathTab])
+  const tab = pathTab ?? lastTab
+  const setTab = (next: Tab) => navigate(next === 'calendar' ? '/' : `/${next}`)
   const [clients, setClients] = useState<Client[]>([])
   const [todos, setTodos] = useState<Todo[]>([])
   const [todoTargets, setTodoTargets] = useState<Map<string, { href: string }>>(new Map())
@@ -104,8 +124,11 @@ export function Home() {
             the detail pane in the split layout. */}
         <div className="mx-auto hidden w-full max-w-[600px] px-4 pb-2.5 md:block">
           <div role="tablist" className="ios-segmented">
-            <SegmentButton selected={tab === 'dashboard'} onClick={() => setTab('dashboard')}>
-              Dashboard
+            <SegmentButton selected={tab === 'calendar'} onClick={() => setTab('calendar')}>
+              Calendar
+            </SegmentButton>
+            <SegmentButton selected={tab === 'clients'} onClick={() => setTab('clients')}>
+              Clients
             </SegmentButton>
             <SegmentButton selected={tab === 'todo'} onClick={() => setTab('todo')}>
               Todo{todos.length > 0 ? ` (${todos.length})` : ''}
@@ -121,7 +144,17 @@ export function Home() {
         className="mx-auto flex w-full max-w-[600px] flex-1 flex-col pb-[calc(var(--tab-bar-h)+env(safe-area-inset-bottom))] md:pb-[env(safe-area-inset-bottom)]"
         style={{ ['--tab-bar-h' as string]: `${TAB_BAR_CONTENT_HEIGHT}px` }}
       >
-        {tab === 'dashboard' ? (
+        {tab === 'calendar' ? (
+          // Wide: the calendar fills the detail pane, so the sidebar holds
+          // its client filter. Phone: the calendar is this whole page.
+          isWide ? (
+            loading ? null : (
+              <ClientFilter clients={clients} />
+            )
+          ) : (
+            <CalendarPage />
+          )
+        ) : tab === 'clients' ? (
           <>
             <div className="flex items-center justify-between pl-5 pr-2 pb-1 pt-4">
               <h1 className="text-[34px] font-bold leading-[1.12] tracking-[-0.03em] text-text-primary">

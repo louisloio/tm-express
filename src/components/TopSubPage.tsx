@@ -16,12 +16,12 @@ export function TopSubPage({ backTo, title, onEdit }: TopSubPageProps) {
         <Link
           to={backTo}
           aria-label="Back"
-          className={`ios-icon-btn -ml-0.5 !w-10 active:opacity-60 ${backTo === '/' ? 'md:hidden' : ''}`}
+          className={`ios-icon-btn -ml-0.5 !w-10 active:opacity-60 ${backTo === '/clients' ? 'md:hidden' : ''}`}
         >
           <ChevronLeftIcon width={26} height={26} />
         </Link>
         <h1
-          className={`flex-1 truncate text-[17px] font-semibold tracking-[-0.022em] text-text-primary ${backTo === '/' ? 'md:pl-3' : ''}`}
+          className={`flex-1 truncate text-[17px] font-semibold tracking-[-0.022em] text-text-primary ${backTo === '/clients' ? 'md:pl-3' : ''}`}
         >
           {title}
         </h1>

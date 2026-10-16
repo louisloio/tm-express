@@ -176,7 +176,7 @@ export function CompanyPage() {
   async function handleArchiveClient() {
     if (!clientId) return
     await archiveRow('clients', clientId)
-    navigate('/')
+    navigate('/clients')
   }
 
   async function handleArchiveVehicle(id: string) {
@@ -217,7 +217,7 @@ export function CompanyPage() {
       <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
         <div className="px-6 py-8">
           <p className="text-[14px] text-danger-text">{error ?? 'Client not found.'}</p>
-          <Link to="/" className="mt-2 inline-block text-[14px] font-medium text-accent">
+          <Link to="/clients" className="mt-2 inline-block text-[14px] font-medium text-accent">
             Back to clients
           </Link>
         </div>
@@ -284,7 +284,7 @@ export function CompanyPage() {
   return (
     <div className="flex min-h-dvh flex-col bg-bg-app pb-[env(safe-area-inset-bottom)]">
       <TopSubPage
-        backTo="/"
+        backTo="/clients"
         title={client.company_name}
         onEdit={() => setDialog({ type: 'client-edit' })}
       />

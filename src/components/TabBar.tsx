@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { ChecklistIcon, HouseIcon } from './icons'
+import { CalendarIcon, ChecklistIcon, HouseIcon } from './icons'
 
-export type HomeTab = 'dashboard' | 'todo'
+export type HomeTab = 'calendar' | 'clients' | 'todo'
 
 interface TabBarProps {
   tab: HomeTab
@@ -10,8 +10,8 @@ interface TabBarProps {
 }
 
 /**
- * iOS-style bottom tab bar (UITabBar) for switching Home between Dashboard
- * and Todo on the phone — the segmented control at the top of Home
+ * iOS-style bottom tab bar (UITabBar) for switching Home between Calendar,
+ * Clients and Todo on the phone — the segmented control at the top of Home
  * (src/pages/Home.tsx) keeps doing that job on tablet/desktop, where a bar
  * fixed to the whole viewport's bottom edge wouldn't sit right next to the
  * detail pane. Fixed to the screen; Home reserves matching bottom padding
@@ -26,10 +26,16 @@ export function TabBar({ tab, todoCount, onSelect }: TabBarProps) {
     >
       <div className="mx-auto flex w-full max-w-[600px]">
         <TabBarButton
-          selected={tab === 'dashboard'}
-          onClick={() => onSelect('dashboard')}
+          selected={tab === 'calendar'}
+          onClick={() => onSelect('calendar')}
+          icon={<CalendarIcon width={25} height={25} />}
+          label="Calendar"
+        />
+        <TabBarButton
+          selected={tab === 'clients'}
+          onClick={() => onSelect('clients')}
           icon={<HouseIcon width={25} height={25} />}
-          label="Dashboard"
+          label="Clients"
         />
         <TabBarButton
           selected={tab === 'todo'}

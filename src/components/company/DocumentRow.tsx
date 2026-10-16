@@ -72,7 +72,8 @@ export function DocumentRow({ doc, parentLabel, onArchive }: DocumentRowProps) {
         <span className="text-[15px] text-text-tertiary">{formatDateTime(doc.uploaded_at)}</span>
         {doc.checked_date && (
           <span className="text-[15px] text-text-tertiary">
-            Checked {formatDate(doc.checked_date)}
+            {doc.doc_type === 'Licence check' ? 'Checked' : 'Performed'}{' '}
+            {formatDate(doc.checked_date)}
           </span>
         )}
         <span className={`text-[15px] ${STATUS_CLASS[status]}`}>
